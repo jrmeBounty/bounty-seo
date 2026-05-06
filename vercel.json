@@ -1,6 +1,4 @@
 {
-  "outputDirectory": "dist/client",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/server" }
-  ]
+  "buildCommand": "bun run build",
+  "installCommand": "bun install"
 }

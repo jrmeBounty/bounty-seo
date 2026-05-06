@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "dotenv -e .env.local -- cross-env NODE_OPTIONS=\"--import ./instrument.server.mjs\" vite dev --port 3000",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-vercel.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
