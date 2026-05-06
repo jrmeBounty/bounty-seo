@@ -74,7 +74,17 @@ await writeFile(
 );
 console.log("✓ .vercel/output/functions/index.func/.vc-config.json");
 
-// 4c. Adapter — bridges Vercel's Node http.IncomingMessage to the TanStack
+// 4c. Write a minimal package.json so Node.js treats the function as ESM
+const funcPackageJson = {
+  type: "module",
+};
+await writeFile(
+  resolve(funcDir, "package.json"),
+  JSON.stringify(funcPackageJson, null, 2),
+);
+console.log("✓ .vercel/output/functions/index.func/package.json");
+
+// 4d. Adapter — bridges Vercel's Node http.IncomingMessage to the TanStack
 //     Start Web fetch handler exported from dist/server/server.js.
 const adapterCode = `
 import serverEntry from "./dist/server/server.js";
