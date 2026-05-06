@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /api/
+Disallow: /demo/
+Disallow: /login
+
+# Bounty Supermarket SEO Tracker — Internal Tool
+# This is a private application. Indexing is discouraged.
+
+Sitemap: https://bountysupermarket.co.ke/sitemap.xml
