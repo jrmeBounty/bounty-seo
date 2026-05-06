@@ -22,6 +22,9 @@ const config = defineConfig({
 		}),
 		viteReact(),
 	],
+	ssr: {
+		noExternal: true,
+	},
 });
 
 export default config;
