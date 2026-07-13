@@ -4,14 +4,27 @@ import { and, asc, avg, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "#/db/index";
 import {
+	account,
+	seoAuditHistory,
+	seoBacklinks,
 	seoCitations,
+	seoContentSuggestions,
+	seoIssues,
+	seoKeywordRankings,
 	seoKeywords,
 	seoLocations,
+	seoPages,
 	seoRankingSnapshots,
 	seoReviews,
 	seoSettings,
 	user,
 } from "#/db/schema";
+import { getGoogleAccessTokenForUser } from "#/lib/google-api";
+import {
+	postGoogleReviewReply,
+	syncGoogleReviews,
+} from "#/lib/google-business";
+import { getPlaceRanking } from "#/lib/google-maps";
 import { createTRPCRouter, publicProcedure } from "./init";
 
 // ─── SEO Tracker: Locations ──────────────────────────────────────────────────
@@ -87,7 +100,6 @@ const seoLocationsRouter = {
 					})
 					.from(seoRankingSnapshots)
 					.where(inArray(seoRankingSnapshots.locationId, ids))
-					.orderBy(desc(seoRankingSnapshots.snapshotDate))
 					.groupBy(seoRankingSnapshots.locationId),
 			]);
 
@@ -147,6 +159,21 @@ const seoLocationsRouter = {
 		)
 		.mutation(async ({ input }) => {
 			return Sentry.startSpan({ name: "seo.locations.create" }, async () => {
+				// Check if location with this Place ID already exists
+				if (input.googlePlaceId) {
+					const existing = await db
+						.select()
+						.from(seoLocations)
+						.where(eq(seoLocations.googlePlaceId, input.googlePlaceId))
+						.limit(1);
+
+					if (existing.length > 0) {
+						// Return existing location instead of creating duplicate
+						return existing[0];
+					}
+				}
+
+				// Create new location
 				const [loc] = await db
 					.insert(seoLocations)
 					.values({
@@ -479,11 +506,43 @@ const seoRankingsRouter = {
 			return Sentry.startSpan(
 				{ name: "seo.rankings.checkNow", attributes: input },
 				async () => {
-					// Step 3 will wire in the actual Google Maps Places API call.
+					const [keyword] = await db
+						.select()
+						.from(seoKeywords)
+						.where(eq(seoKeywords.id, input.keywordId))
+						.limit(1);
+
+					const [location] = await db
+						.select()
+						.from(seoLocations)
+						.where(eq(seoLocations.id, input.locationId))
+						.limit(1);
+
+					if (!keyword || !location) {
+						return {
+							position: null,
+							message: "Keyword or Location not found in database",
+						};
+					}
+
+					const { position, source, message } = await getPlaceRanking(
+						keyword.term,
+						location.googlePlaceId,
+						location.name,
+					);
+
+					const todayStr = new Date().toISOString().split("T")[0];
+					await db.insert(seoRankingSnapshots).values({
+						keywordId: input.keywordId,
+						locationId: input.locationId,
+						position,
+						snapshotDate: todayStr,
+						source,
+					});
+
 					return {
-						position: null as number | null,
-						message:
-							"Google Maps API coming in Step 3 — set GOOGLE_MAPS_API_KEY in .env.local",
+						position,
+						message,
 					};
 				},
 			);
@@ -578,10 +637,54 @@ const seoReviewsRouter = {
 				replyText: z.string().min(1).max(2000),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			return Sentry.startSpan(
 				{ name: "seo.reviews.reply", attributes: { reviewId: input.reviewId } },
 				async () => {
+					const [review] = await db
+						.select()
+						.from(seoReviews)
+						.where(eq(seoReviews.id, input.reviewId))
+						.limit(1);
+
+					if (!review) {
+						throw new Error("Review not found");
+					}
+
+					const [location] = await db
+						.select()
+						.from(seoLocations)
+						.where(eq(seoLocations.id, review.locationId))
+						.limit(1);
+
+					// If it is a Google review, attempt to post the reply to GBP API
+					if (review.source === "google") {
+						const userId = ctx.session?.user?.id;
+						let accessToken: string | null = null;
+						if (userId) {
+							accessToken = await getGoogleAccessTokenForUser(userId);
+						} else {
+							// Cron/CLI script context or first available google user fallback
+							const [fallbackAccount] = await db
+								.select()
+								.from(account)
+								.where(eq(account.providerId, "google"))
+								.limit(1);
+							if (fallbackAccount) {
+								accessToken = await getGoogleAccessTokenForUser(
+									fallbackAccount.userId,
+								);
+							}
+						}
+
+						await postGoogleReviewReply(
+							location.googlePlaceId,
+							review.sourceId,
+							input.replyText,
+							accessToken,
+						);
+					}
+
 					const [updated] = await db
 						.update(seoReviews)
 						.set({ reply: input.replyText, repliedAt: new Date() })
@@ -1040,6 +1143,468 @@ const seoSettingsRouter = {
 		}),
 } satisfies TRPCRouterRecord;
 
+// ─── Website SEO Optimization ────────────────────────────────────────────────
+
+const seoWebsiteRouter = {
+	stats: publicProcedure.query(async () => {
+		return Sentry.startSpan({ name: "seo.website.stats" }, async () => {
+			const [pageStats, issueStats, backlinkStats, keywordStats] =
+				await Promise.all([
+					db
+						.select({
+							total: count(),
+							avgScore: avg(seoPages.seoScore),
+							indexable: sql<number>`COUNT(CASE WHEN ${seoPages.isIndexable} = true THEN 1 END)`,
+						})
+						.from(seoPages)
+						.where(eq(seoPages.isActive, true)),
+					db
+						.select({
+							total: count(),
+							critical: sql<number>`COUNT(CASE WHEN ${seoIssues.issueType} = 'critical' THEN 1 END)`,
+							unresolved: sql<number>`COUNT(CASE WHEN ${seoIssues.isResolved} = false THEN 1 END)`,
+						})
+						.from(seoIssues),
+					db
+						.select({
+							total: count(),
+							dofollow: sql<number>`COUNT(CASE WHEN ${seoBacklinks.isDofollow} = true AND ${seoBacklinks.status} = 'active' THEN 1 END)`,
+						})
+						.from(seoBacklinks)
+						.where(eq(seoBacklinks.status, "active")),
+					db
+						.select({
+							total: count(),
+							avgPosition: avg(seoKeywordRankings.currentPosition),
+						})
+						.from(seoKeywordRankings)
+						.where(eq(seoKeywordRankings.isActive, true)),
+				]);
+
+			return {
+				overallScore: Math.round(Number(pageStats[0]?.avgScore ?? 0)),
+				totalPages: Number(pageStats[0]?.total ?? 0),
+				indexablePages: Number(pageStats[0]?.indexable ?? 0),
+				criticalIssues: Number(issueStats[0]?.critical ?? 0),
+				unresolvedIssues: Number(issueStats[0]?.unresolved ?? 0),
+				totalBacklinks: Number(backlinkStats[0]?.total ?? 0),
+				dofollowBacklinks: Number(backlinkStats[0]?.dofollow ?? 0),
+				avgKeywordPosition:
+					Math.round(Number(keywordStats[0]?.avgPosition ?? 0) * 10) / 10,
+			};
+		});
+	}),
+
+	pages: {
+		list: publicProcedure
+			.input(
+				z
+					.object({
+						pageType: z
+							.enum(["home", "category", "product", "blog", "other"])
+							.optional(),
+						limit: z.number().int().min(1).max(100).default(50),
+						offset: z.number().int().min(0).default(0),
+					})
+					.optional(),
+			)
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.pages.list" },
+					async () => {
+						const conditions = [eq(seoPages.isActive, true)];
+						if (input?.pageType) {
+							conditions.push(eq(seoPages.pageType, input.pageType));
+						}
+
+						const [pages, [{ total }]] = await Promise.all([
+							db
+								.select()
+								.from(seoPages)
+								.where(and(...conditions))
+								.orderBy(desc(seoPages.seoScore))
+								.limit(input?.limit ?? 50)
+								.offset(input?.offset ?? 0),
+							db
+								.select({ total: count() })
+								.from(seoPages)
+								.where(and(...conditions)),
+						]);
+
+						return { pages, total: Number(total) };
+					},
+				);
+			}),
+
+		get: publicProcedure
+			.input(z.object({ id: z.number().int().positive() }))
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.pages.get", attributes: { pageId: input.id } },
+					async () => {
+						const [page] = await db
+							.select()
+							.from(seoPages)
+							.where(eq(seoPages.id, input.id))
+							.limit(1);
+
+						if (!page) return null;
+
+						const [issues, keywords, suggestions] = await Promise.all([
+							db
+								.select()
+								.from(seoIssues)
+								.where(eq(seoIssues.pageId, input.id))
+								.orderBy(desc(seoIssues.severity)),
+							db
+								.select()
+								.from(seoKeywordRankings)
+								.where(eq(seoKeywordRankings.pageId, input.id))
+								.orderBy(asc(seoKeywordRankings.currentPosition)),
+							db
+								.select()
+								.from(seoContentSuggestions)
+								.where(eq(seoContentSuggestions.pageId, input.id))
+								.orderBy(desc(seoContentSuggestions.priority)),
+						]);
+
+						return {
+							...page,
+							issues,
+							keywords,
+							suggestions,
+						};
+					},
+				);
+			}),
+
+		create: publicProcedure
+			.input(
+				z.object({
+					url: z.string().url(),
+					pageType: z.enum(["home", "category", "product", "blog", "other"]),
+					title: z.string().optional(),
+					metaDescription: z.string().optional(),
+				}),
+			)
+			.mutation(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.pages.create" },
+					async () => {
+						const [page] = await db
+							.insert(seoPages)
+							.values({
+								url: input.url,
+								pageType: input.pageType,
+								title: input.title,
+								metaDescription: input.metaDescription,
+							})
+							.returning();
+						return page;
+					},
+				);
+			}),
+	},
+
+	issues: {
+		list: publicProcedure
+			.input(
+				z
+					.object({
+						pageId: z.number().int().positive().optional(),
+						issueType: z.enum(["critical", "warning", "info"]).optional(),
+						category: z
+							.enum([
+								"meta",
+								"content",
+								"technical",
+								"performance",
+								"mobile",
+								"accessibility",
+							])
+							.optional(),
+						isResolved: z.boolean().optional(),
+						limit: z.number().int().min(1).max(100).default(50),
+						offset: z.number().int().min(0).default(0),
+					})
+					.optional(),
+			)
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.issues.list" },
+					async () => {
+						const conditions = [];
+						if (input?.pageId) {
+							conditions.push(eq(seoIssues.pageId, input.pageId));
+						}
+						if (input?.issueType) {
+							conditions.push(eq(seoIssues.issueType, input.issueType));
+						}
+						if (input?.category) {
+							conditions.push(eq(seoIssues.category, input.category));
+						}
+						if (input?.isResolved !== undefined) {
+							conditions.push(eq(seoIssues.isResolved, input.isResolved));
+						}
+
+						const where = conditions.length ? and(...conditions) : undefined;
+
+						const [issues, [{ total }]] = await Promise.all([
+							db
+								.select({
+									id: seoIssues.id,
+									pageId: seoIssues.pageId,
+									issueType: seoIssues.issueType,
+									category: seoIssues.category,
+									title: seoIssues.title,
+									description: seoIssues.description,
+									recommendation: seoIssues.recommendation,
+									severity: seoIssues.severity,
+									impact: seoIssues.impact,
+									isResolved: seoIssues.isResolved,
+									detectedAt: seoIssues.detectedAt,
+									pageUrl: seoPages.url,
+								})
+								.from(seoIssues)
+								.leftJoin(seoPages, eq(seoIssues.pageId, seoPages.id))
+								.where(where)
+								.orderBy(desc(seoIssues.severity), desc(seoIssues.detectedAt))
+								.limit(input?.limit ?? 50)
+								.offset(input?.offset ?? 0),
+							db.select({ total: count() }).from(seoIssues).where(where),
+						]);
+
+						return { issues, total: Number(total) };
+					},
+				);
+			}),
+
+		resolve: publicProcedure
+			.input(
+				z.object({
+					issueId: z.number().int().positive(),
+					resolved: z.boolean(),
+					notes: z.string().optional(),
+				}),
+			)
+			.mutation(async ({ input, ctx }) => {
+				return Sentry.startSpan(
+					{
+						name: "seo.website.issues.resolve",
+						attributes: { issueId: input.issueId },
+					},
+					async () => {
+						const [updated] = await db
+							.update(seoIssues)
+							.set({
+								isResolved: input.resolved,
+								resolvedAt: input.resolved ? new Date() : null,
+								resolvedBy: input.resolved
+									? (ctx.session?.user?.id ?? null)
+									: null,
+								notes: input.notes ?? null,
+							})
+							.where(eq(seoIssues.id, input.issueId))
+							.returning();
+						return updated;
+					},
+				);
+			}),
+	},
+
+	backlinks: {
+		list: publicProcedure
+			.input(
+				z
+					.object({
+						status: z.enum(["active", "lost", "broken"]).optional(),
+						limit: z.number().int().min(1).max(100).default(50),
+						offset: z.number().int().min(0).default(0),
+					})
+					.optional(),
+			)
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.backlinks.list" },
+					async () => {
+						const conditions = [];
+						if (input?.status) {
+							conditions.push(eq(seoBacklinks.status, input.status));
+						}
+
+						const where = conditions.length ? and(...conditions) : undefined;
+
+						const [backlinks, [{ total }]] = await Promise.all([
+							db
+								.select()
+								.from(seoBacklinks)
+								.where(where)
+								.orderBy(desc(seoBacklinks.domainAuthority))
+								.limit(input?.limit ?? 50)
+								.offset(input?.offset ?? 0),
+							db.select({ total: count() }).from(seoBacklinks).where(where),
+						]);
+
+						return { backlinks, total: Number(total) };
+					},
+				);
+			}),
+
+		create: publicProcedure
+			.input(
+				z.object({
+					targetUrl: z.string().url(),
+					sourceUrl: z.string().url(),
+					sourceDomain: z.string(),
+					anchorText: z.string().optional(),
+					isDofollow: z.boolean().default(true),
+					domainAuthority: z.number().int().min(0).max(100).optional(),
+				}),
+			)
+			.mutation(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.backlinks.create" },
+					async () => {
+						const [backlink] = await db
+							.insert(seoBacklinks)
+							.values({
+								targetUrl: input.targetUrl,
+								sourceUrl: input.sourceUrl,
+								sourceDomain: input.sourceDomain,
+								anchorText: input.anchorText,
+								isDofollow: input.isDofollow,
+								domainAuthority: input.domainAuthority,
+							})
+							.returning();
+						return backlink;
+					},
+				);
+			}),
+	},
+
+	keywords: {
+		list: publicProcedure
+			.input(
+				z
+					.object({
+						pageId: z.number().int().positive().optional(),
+						limit: z.number().int().min(1).max(100).default(50),
+					})
+					.optional(),
+			)
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.keywords.list" },
+					async () => {
+						const conditions = [eq(seoKeywordRankings.isActive, true)];
+						if (input?.pageId) {
+							conditions.push(eq(seoKeywordRankings.pageId, input.pageId));
+						}
+
+						return db
+							.select({
+								id: seoKeywordRankings.id,
+								pageId: seoKeywordRankings.pageId,
+								keyword: seoKeywordRankings.keyword,
+								currentPosition: seoKeywordRankings.currentPosition,
+								previousPosition: seoKeywordRankings.previousPosition,
+								targetPosition: seoKeywordRankings.targetPosition,
+								searchVolume: seoKeywordRankings.searchVolume,
+								competition: seoKeywordRankings.competition,
+								lastChecked: seoKeywordRankings.lastChecked,
+								pageUrl: seoPages.url,
+							})
+							.from(seoKeywordRankings)
+							.leftJoin(seoPages, eq(seoKeywordRankings.pageId, seoPages.id))
+							.where(and(...conditions))
+							.orderBy(asc(seoKeywordRankings.currentPosition))
+							.limit(input?.limit ?? 50);
+					},
+				);
+			}),
+
+		create: publicProcedure
+			.input(
+				z.object({
+					pageId: z.number().int().positive(),
+					keyword: z.string().min(2),
+					targetPosition: z.number().int().min(1).max(100).default(10),
+					searchVolume: z.number().int().optional(),
+				}),
+			)
+			.mutation(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.keywords.create" },
+					async () => {
+						const [keyword] = await db
+							.insert(seoKeywordRankings)
+							.values({
+								pageId: input.pageId,
+								keyword: input.keyword,
+								targetPosition: input.targetPosition,
+								searchVolume: input.searchVolume,
+							})
+							.returning();
+						return keyword;
+					},
+				);
+			}),
+	},
+
+	audit: {
+		history: publicProcedure
+			.input(
+				z
+					.object({
+						limit: z.number().int().min(1).max(50).default(10),
+					})
+					.optional(),
+			)
+			.query(async ({ input }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.audit.history" },
+					async () => {
+						return db
+							.select()
+							.from(seoAuditHistory)
+							.orderBy(desc(seoAuditHistory.createdAt))
+							.limit(input?.limit ?? 10);
+					},
+				);
+			}),
+
+		create: publicProcedure
+			.input(
+				z.object({
+					auditType: z.enum(["full", "quick", "page", "technical"]),
+					overallScore: z.number().int().min(0).max(100).optional(),
+					pagesAnalyzed: z.number().int().default(0),
+					issuesFound: z.number().int().default(0),
+				}),
+			)
+			.mutation(async ({ input, ctx }) => {
+				return Sentry.startSpan(
+					{ name: "seo.website.audit.create" },
+					async () => {
+						const [audit] = await db
+							.insert(seoAuditHistory)
+							.values({
+								auditType: input.auditType,
+								overallScore: input.overallScore,
+								pagesAnalyzed: input.pagesAnalyzed,
+								issuesFound: input.issuesFound,
+								performedBy: ctx.session?.user?.id ?? null,
+								startedAt: new Date(),
+								completedAt: new Date(),
+							})
+							.returning();
+						return audit;
+					},
+				);
+			}),
+	},
+} satisfies TRPCRouterRecord;
+
 // ─── Root tRPC router ────────────────────────────────────────────────────────
 
 export const trpcRouter = createTRPCRouter({
@@ -1052,6 +1617,92 @@ export const trpcRouter = createTRPCRouter({
 		reviews: seoReviewsRouter,
 		citations: seoCitationsRouter,
 		settings: seoSettingsRouter,
+		website: seoWebsiteRouter,
+		syncAll: publicProcedure.mutation(async ({ ctx }) => {
+			return Sentry.startSpan({ name: "seo.syncAll" }, async () => {
+				const userId = ctx.session?.user?.id;
+				let accessToken: string | null = null;
+				if (userId) {
+					accessToken = await getGoogleAccessTokenForUser(userId);
+				} else {
+					const [fallbackAccount] = await db
+						.select()
+						.from(account)
+						.where(eq(account.providerId, "google"))
+						.limit(1);
+					if (fallbackAccount) {
+						accessToken = await getGoogleAccessTokenForUser(
+							fallbackAccount.userId,
+						);
+					}
+				}
+
+				// 1. Fetch all active locations
+				const locations = await db
+					.select()
+					.from(seoLocations)
+					.where(eq(seoLocations.isActive, true));
+
+				// 2. Sync reviews for each location
+				const syncResults = await Promise.all(
+					locations.map(async (loc) => {
+						try {
+							return await syncGoogleReviews(
+								loc.id,
+								loc.googlePlaceId,
+								accessToken,
+							);
+						} catch (err) {
+							// Failed to sync reviews for location - return error
+							return { synced: 0, message: String(err) };
+						}
+					}),
+				);
+
+				// 3. Check rankings for all active keywords
+				const keywords = await db
+					.select()
+					.from(seoKeywords)
+					.where(eq(seoKeywords.isActive, true));
+
+				const todayStr = new Date().toISOString().split("T")[0];
+
+				await Promise.all(
+					keywords.map(async (kw) => {
+						try {
+							const loc = locations.find((l) => l.id === kw.locationId);
+							if (!loc) return;
+
+							const { position, source } = await getPlaceRanking(
+								kw.term,
+								loc.googlePlaceId,
+								loc.name,
+							);
+
+							await db.insert(seoRankingSnapshots).values({
+								keywordId: kw.id,
+								locationId: kw.locationId,
+								position,
+								snapshotDate: todayStr,
+								source,
+							});
+						} catch (err) {
+							// Failed keyword ranking check - silently continue
+						}
+					}),
+				);
+
+				const totalSyncedReviews = syncResults.reduce(
+					(sum, res) => sum + res.synced,
+					0,
+				);
+
+				return {
+					success: true,
+					message: `Successfully synced ${locations.length} locations (${totalSyncedReviews} new reviews) and verified ${keywords.length} keywords.`,
+				};
+			});
+		}),
 	}),
 });
 

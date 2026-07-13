@@ -1,18 +1,18 @@
 interface BountyLogoProps {
-	/** Diameter in pixels (logo is circular) */
+	/** Diameter in pixels */
 	size?: number;
 	className?: string;
 }
 
-/** Renders the Bounty Supermarket circular logo from /public */
+/** Renders the Bounty Supermarket cart logo from /public */
 export function BountyLogo({ size = 40, className = "" }: BountyLogoProps) {
 	return (
 		<img
-			src="/bounty picture.jpg"
+			src="/BOUNTY_CART_YELLOW.svg"
 			alt="Bounty Supermarket"
 			width={size}
 			height={size}
-			className={`rounded-full object-cover shrink-0 ${className}`}
+			className={`shrink-0 ${className}`}
 			style={{ width: size, height: size }}
 		/>
 	);

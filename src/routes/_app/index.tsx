@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Link2, RefreshCw, Search, Star, TrendingUp } from "lucide-react";
+import { Link2, RefreshCw, Search, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import {
 	Bar,
@@ -15,9 +15,12 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { PermissionAwareButton } from "#/components/PermissionAwareButton";
+import { ViewerBanner } from "#/components/RoleGuard";
+import { SentimentBadge } from "#/components/SentimentBadge";
+import { StarRating } from "#/components/StarRating";
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -74,43 +77,7 @@ export const Route = createFileRoute("/_app/")({
 
 const CHART_COLORS = ["#D4A017", "#3B82F6", "#22C55E", "#F97316", "#8B5CF6"];
 
-// ─── Helper components ────────────────────────────────────────────────────────
-
-function StarRating({ rating }: { rating: number }) {
-	return (
-		<div className="flex gap-0.5">
-			{Array.from({ length: 5 }, (_, i) => (
-				<Star
-					key={i}
-					size={12}
-					className={
-						i < rating
-							? "fill-[#D4A017] text-[#D4A017]"
-							: "fill-gray-200 text-gray-200"
-					}
-				/>
-			))}
-		</div>
-	);
-}
-
-function SentimentBadge({
-	sentiment,
-}: {
-	sentiment: "positive" | "neutral" | "negative";
-}) {
-	const cfg = {
-		positive: "bg-green-100 text-green-700 border-green-200",
-		neutral: "bg-gray-100 text-gray-600 border-gray-200",
-		negative: "bg-red-100 text-red-700 border-red-200",
-	} as const;
-	const labels = {
-		positive: "Positive",
-		neutral: "Neutral",
-		negative: "Negative",
-	} as const;
-	return <Badge className={cfg[sentiment]}>{labels[sentiment]}</Badge>;
-}
+// ─── Helper functions ─────────────────────────────────────────────────────────
 
 function getPositionColor(pos: number): string {
 	if (pos === 1) return "#22C55E";
@@ -170,25 +137,28 @@ function DashboardPage() {
 	// ── Full-page loading skeleton ─────────────────────────────────────────────
 	if (statsLoading) {
 		return (
-			<div className="space-y-6 p-6">
+			<div className="space-y-6 p-6" style={{ backgroundColor: "#0A0A0A" }}>
 				{/* Header */}
 				<div className="flex items-start justify-between gap-4">
 					<div className="space-y-2">
-						<Skeleton className="h-7 w-48" />
-						<Skeleton className="h-4 w-64" />
-						<Skeleton className="h-3 w-40" />
+						<Skeleton className="h-7 w-48 bg-[#252525]" />
+						<Skeleton className="h-4 w-64 bg-[#252525]" />
+						<Skeleton className="h-3 w-40 bg-[#252525]" />
 					</div>
-					<Skeleton className="h-9 w-24" />
+					<Skeleton className="h-9 w-24 bg-[#252525]" />
 				</div>
 
 				{/* KPI cards */}
 				<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 					{Array.from({ length: 4 }).map((_, i) => (
-						<Card key={i}>
+						<Card
+							key={i}
+							style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}
+						>
 							<CardContent className="pt-6">
-								<Skeleton className="mb-3 h-4 w-32" />
-								<Skeleton className="mb-2 h-8 w-16" />
-								<Skeleton className="h-5 w-24" />
+								<Skeleton className="mb-3 h-4 w-32 bg-[#252525]" />
+								<Skeleton className="mb-2 h-8 w-16 bg-[#252525]" />
+								<Skeleton className="h-5 w-24 bg-[#252525]" />
 							</CardContent>
 						</Card>
 					))}
@@ -196,22 +166,22 @@ function DashboardPage() {
 
 				{/* Chart placeholders */}
 				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<Card>
+					<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 						<CardHeader>
-							<Skeleton className="h-5 w-48" />
-							<Skeleton className="h-4 w-36" />
+							<Skeleton className="h-5 w-48 bg-[#252525]" />
+							<Skeleton className="h-4 w-36 bg-[#252525]" />
 						</CardHeader>
 						<CardContent>
-							<Skeleton className="h-[260px] w-full rounded-lg" />
+							<Skeleton className="h-[260px] w-full rounded-lg bg-[#252525]" />
 						</CardContent>
 					</Card>
-					<Card>
+					<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 						<CardHeader>
-							<Skeleton className="h-5 w-48" />
-							<Skeleton className="h-4 w-36" />
+							<Skeleton className="h-5 w-48 bg-[#252525]" />
+							<Skeleton className="h-4 w-36 bg-[#252525]" />
 						</CardHeader>
 						<CardContent>
-							<Skeleton className="h-[260px] w-full rounded-lg" />
+							<Skeleton className="h-[260px] w-full rounded-lg bg-[#252525]" />
 						</CardContent>
 					</Card>
 				</div>
@@ -220,46 +190,50 @@ function DashboardPage() {
 	}
 
 	return (
-		<div className="space-y-6 p-6">
+		<div className="space-y-6 p-6" style={{ backgroundColor: "#0A0A0A" }}>
+			{/* Viewer Banner */}
+			<ViewerBanner />
+
 			{/* ── Section 1: Page Header ──────────────────────────────────────── */}
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold text-foreground">SEO Dashboard</h1>
-					<p className="mt-0.5 text-sm text-muted-foreground">
+					<h1 className="text-2xl font-bold text-gray-100">SEO Dashboard</h1>
+					<p className="mt-0.5 text-sm text-gray-400">
 						Bounty Supermarket — Great Savings Everyday
 					</p>
-					<p className="mt-1 text-xs text-muted-foreground">
+					<p className="mt-1 text-xs text-gray-400">
 						Last updated: Today at 09:15 AM
 					</p>
 				</div>
-				<Button
+				<PermissionAwareButton
+					permission="data.sync"
 					className="shrink-0 font-semibold text-black hover:opacity-90"
 					style={{ backgroundColor: "var(--bounty-gold)" }}
 				>
 					<RefreshCw size={14} />
 					Sync Now
-				</Button>
+				</PermissionAwareButton>
 			</div>
 
 			{/* ── Section 2: KPI Cards ────────────────────────────────────────── */}
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
 				{/* Card 1 — Avg. Maps Position */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardContent className="pt-6">
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-sm font-medium text-gray-400">
 									Avg. Maps Position
 								</p>
-								<div className="mt-2 text-3xl font-bold text-foreground">
+								<div className="mt-2 text-3xl font-bold text-gray-100">
 									{stats?.avgPosition != null
 										? stats.avgPosition.toFixed(1)
 										: "—"}
 								</div>
-								<Badge className="mt-2 bg-green-100 text-green-700 border-green-200">
+								<Badge className="mt-2 bg-green-900/30 text-green-400 border-green-800">
 									↑ 0.7 vs last month
 								</Badge>
-								<p className="mt-1.5 text-xs text-muted-foreground">
+								<p className="mt-1.5 text-xs text-gray-400">
 									Google Maps ranking
 								</p>
 							</div>
@@ -271,20 +245,20 @@ function DashboardPage() {
 				</Card>
 
 				{/* Card 2 — Total Reviews */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardContent className="pt-6">
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-sm font-medium text-gray-400">
 									Total Reviews
 								</p>
-								<div className="mt-2 text-3xl font-bold text-foreground">
+								<div className="mt-2 text-3xl font-bold text-gray-100">
 									{stats?.reviews.total ?? 0}
 								</div>
-								<Badge className="mt-2 bg-green-100 text-green-700 border-green-200">
+								<Badge className="mt-2 bg-green-900/30 text-green-400 border-green-800">
 									+18 this week
 								</Badge>
-								<p className="mt-1.5 text-xs text-muted-foreground">
+								<p className="mt-1.5 text-xs text-gray-400">
 									All locations combined
 								</p>
 							</div>
@@ -296,22 +270,20 @@ function DashboardPage() {
 				</Card>
 
 				{/* Card 3 — Citation Score */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardContent className="pt-6">
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-sm font-medium text-gray-400">
 									Citation Score
 								</p>
-								<div className="mt-2 text-3xl font-bold text-foreground">
+								<div className="mt-2 text-3xl font-bold text-gray-100">
 									{stats?.citations.avgScore ?? 0}%
 								</div>
-								<Badge className="mt-2 bg-amber-100 text-amber-700 border-amber-200">
+								<Badge className="mt-2 bg-amber-900/30 text-amber-400 border-amber-800">
 									{stats?.citations.issues ?? 0} issues found
 								</Badge>
-								<p className="mt-1.5 text-xs text-muted-foreground">
-									NAP consistency
-								</p>
+								<p className="mt-1.5 text-xs text-gray-400">NAP consistency</p>
 							</div>
 							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">
 								<Link2 size={18} className="text-amber-600" />
@@ -321,20 +293,20 @@ function DashboardPage() {
 				</Card>
 
 				{/* Card 4 — Active Keywords */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardContent className="pt-6">
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
-								<p className="text-sm font-medium text-muted-foreground">
+								<p className="text-sm font-medium text-gray-400">
 									Active Keywords
 								</p>
-								<div className="mt-2 text-3xl font-bold text-foreground">
+								<div className="mt-2 text-3xl font-bold text-gray-100">
 									{stats?.keywordCount ?? 0}
 								</div>
-								<Badge className="mt-2 bg-blue-100 text-blue-700 border-blue-200">
+								<Badge className="mt-2 bg-blue-900/30 text-blue-400 border-blue-800">
 									{stats?.locationCount ?? 0} locations
 								</Badge>
-								<p className="mt-1.5 text-xs text-muted-foreground">
+								<p className="mt-1.5 text-xs text-gray-400">
 									Tracked positions
 								</p>
 							</div>
@@ -347,7 +319,7 @@ function DashboardPage() {
 			</div>
 
 			{/* ── Section: SEO Health Score ─────────────────────────────────── */}
-			<Card>
+			<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 				<CardContent className="pt-6">
 					<div className="flex flex-col gap-6 sm:flex-row sm:items-center">
 						{/* Score gauge — left */}
@@ -358,13 +330,13 @@ function DashboardPage() {
 							>
 								{healthScore}
 							</div>
-							<p className="text-sm font-semibold text-gray-500">
+							<p className="text-sm font-semibold text-gray-400">
 								SEO Health Score
 							</p>
 							<Progress value={healthScore} className="w-full h-2" />
 							<Badge
 								style={{
-									backgroundColor: scoreColor + "25",
+									backgroundColor: `${scoreColor}25`,
 									color: scoreColor,
 									border: "none",
 								}}
@@ -374,7 +346,7 @@ function DashboardPage() {
 						</div>
 
 						{/* Divider */}
-						<div className="hidden sm:block w-px self-stretch bg-gray-100" />
+						<div className="hidden sm:block w-px self-stretch bg-[#2A2A2A]" />
 
 						{/* Contributors — right */}
 						<div className="flex-1 space-y-4">
@@ -384,12 +356,12 @@ function DashboardPage() {
 
 							{/* Rankings contributor */}
 							<div className="flex items-center gap-3">
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 shrink-0">
-									<TrendingUp size={15} className="text-gray-500" />
+								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#252525] shrink-0">
+									<TrendingUp size={15} className="text-gray-400" />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between mb-1">
-										<span className="text-sm font-medium text-gray-700">
+										<span className="text-sm font-medium text-gray-300">
 											Rankings
 										</span>
 										<span
@@ -399,7 +371,7 @@ function DashboardPage() {
 											{posScore}
 										</span>
 									</div>
-									<div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+									<div className="h-1.5 w-full rounded-full bg-[#252525] overflow-hidden">
 										<div
 											className="h-full rounded-full"
 											style={{
@@ -418,12 +390,12 @@ function DashboardPage() {
 
 							{/* Reviews contributor */}
 							<div className="flex items-center gap-3">
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 shrink-0">
-									<Star size={15} className="text-gray-500" />
+								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#252525] shrink-0">
+									<Star size={15} className="text-gray-400" />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between mb-1">
-										<span className="text-sm font-medium text-gray-700">
+										<span className="text-sm font-medium text-gray-300">
 											Reviews
 										</span>
 										<span
@@ -433,7 +405,7 @@ function DashboardPage() {
 											{revScore}
 										</span>
 									</div>
-									<div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+									<div className="h-1.5 w-full rounded-full bg-[#252525] overflow-hidden">
 										<div
 											className="h-full rounded-full"
 											style={{
@@ -452,12 +424,12 @@ function DashboardPage() {
 
 							{/* Citations contributor */}
 							<div className="flex items-center gap-3">
-								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 shrink-0">
-									<Link2 size={15} className="text-gray-500" />
+								<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#252525] shrink-0">
+									<Link2 size={15} className="text-gray-400" />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between mb-1">
-										<span className="text-sm font-medium text-gray-700">
+										<span className="text-sm font-medium text-gray-300">
 											Citations
 										</span>
 										<span
@@ -467,7 +439,7 @@ function DashboardPage() {
 											{citScore}
 										</span>
 									</div>
-									<div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+									<div className="h-1.5 w-full rounded-full bg-[#252525] overflow-hidden">
 										<div
 											className="h-full rounded-full"
 											style={{
@@ -490,12 +462,12 @@ function DashboardPage() {
 			{/* ── Section 3: Charts row ───────────────────────────────────────── */}
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 				{/* Left — Rankings Trend */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardHeader>
-						<CardTitle className="text-base">
+						<CardTitle className="text-base text-gray-100">
 							Google Maps Position Trend
 						</CardTitle>
-						<CardDescription>
+						<CardDescription className="text-gray-400">
 							Top keywords — lower position is better
 						</CardDescription>
 						<div className="flex gap-1.5 mt-2">
@@ -557,19 +529,23 @@ function DashboardPage() {
 				</Card>
 
 				{/* Right — Rating Distribution */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardHeader>
-						<CardTitle className="text-base">Review Rating Breakdown</CardTitle>
-						<CardDescription>All locations — all time</CardDescription>
+						<CardTitle className="text-base text-gray-100">
+							Review Rating Breakdown
+						</CardTitle>
+						<CardDescription className="text-gray-400">
+							All locations — all time
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{/* Summary stats */}
 						<div className="mb-3 flex items-center gap-6">
 							<div>
-								<span className="text-2xl font-bold text-foreground">
+								<span className="text-2xl font-bold text-gray-100">
 									{stats?.reviews.total ?? 0}
 								</span>
-								<span className="ml-1.5 text-sm text-muted-foreground">
+								<span className="ml-1.5 text-sm text-gray-400">
 									total reviews
 								</span>
 							</div>
@@ -582,7 +558,7 @@ function DashboardPage() {
 										? `${stats.reviews.avgRating.toFixed(1)}★`
 										: "—"}
 								</span>
-								<span className="ml-1.5 text-sm text-muted-foreground">
+								<span className="ml-1.5 text-sm text-gray-400">
 									average rating
 								</span>
 							</div>
@@ -630,10 +606,14 @@ function DashboardPage() {
 			{/* ── Section 4: Bottom row ───────────────────────────────────────── */}
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 				{/* Left — Recent Reviews */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardHeader>
-						<CardTitle className="text-base">Recent Reviews</CardTitle>
-						<CardDescription>Latest customer feedback</CardDescription>
+						<CardTitle className="text-base text-gray-100">
+							Recent Reviews
+						</CardTitle>
+						<CardDescription className="text-gray-400">
+							Latest customer feedback
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						{(stats?.recentReviews ?? []).map((review) => (
@@ -652,18 +632,18 @@ function DashboardPage() {
 
 								<div className="min-w-0 flex-1">
 									<div className="flex flex-wrap items-center gap-1.5">
-										<span className="text-sm font-semibold leading-none">
+										<span className="text-sm font-semibold leading-none text-gray-200">
 											{review.reviewerName ?? "Anonymous"}
 										</span>
-										<Badge className="bg-blue-50 text-blue-600 border-blue-100 px-1.5 py-0 text-[10px]">
+										<Badge className="bg-blue-900/30 text-blue-400 border-blue-800 px-1.5 py-0 text-[10px]">
 											{review.locationCity}
 										</Badge>
 										<StarRating rating={review.rating} />
-										<span className="ml-auto text-[10px] text-muted-foreground">
+										<span className="ml-auto text-[10px] text-gray-400">
 											{new Date(review.reviewDate).toLocaleDateString()}
 										</span>
 									</div>
-									<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+									<p className="mt-1 text-xs leading-relaxed text-gray-400">
 										{review.text != null && review.text.length > 80
 											? `${review.text.slice(0, 80)}…`
 											: (review.text ?? "")}
@@ -685,16 +665,18 @@ function DashboardPage() {
 				</Card>
 
 				{/* Right — Keyword Position Changes */}
-				<Card>
+				<Card style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}>
 					<CardHeader>
-						<CardTitle className="text-base">
+						<CardTitle className="text-base text-gray-100">
 							Position Changes (7 days)
 						</CardTitle>
-						<CardDescription>Movement in Google Maps rankings</CardDescription>
+						<CardDescription className="text-gray-400">
+							Movement in Google Maps rankings
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{/* Table header */}
-						<div className="mb-2 grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+						<div className="mb-2 grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-[#2A2A2A] pb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
 							<span>Keyword</span>
 							<span>Location</span>
 							<span className="text-center">Change</span>
@@ -705,25 +687,25 @@ function DashboardPage() {
 							{(stats?.keywordChanges ?? []).map((item) => (
 								<div
 									key={`${item.term}-${item.locationCity}`}
-									className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted/40"
+									className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-[#252525]"
 								>
-									<span className="truncate text-xs font-medium text-foreground">
+									<span className="truncate text-xs font-medium text-gray-200">
 										{item.term}
 									</span>
-									<span className="text-[11px] text-muted-foreground">
+									<span className="text-[11px] text-gray-400">
 										{item.locationCity}
 									</span>
 									<div className="flex justify-center">
 										{item.change != null && item.change > 0 ? (
-											<Badge className="bg-green-100 text-green-700 border-green-200 text-[11px]">
+											<Badge className="bg-green-900/30 text-green-400 border-green-800 text-[11px]">
 												↑ +{item.change}
 											</Badge>
 										) : item.change != null && item.change < 0 ? (
-											<Badge className="bg-red-100 text-red-700 border-red-200 text-[11px]">
+											<Badge className="bg-red-900/30 text-red-400 border-red-800 text-[11px]">
 												↓ {item.change}
 											</Badge>
 										) : (
-											<Badge className="bg-gray-100 text-gray-500 border-gray-200 text-[11px]">
+											<Badge className="bg-[#252525] text-gray-400 border-[#2A2A2A] text-[11px]">
 												—
 											</Badge>
 										)}

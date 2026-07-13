@@ -107,7 +107,7 @@ my-tanstack-app/
 ├── src/
 │   ├── components/
 │   │   ├── ui/                 # shadcn/ui generated components
-│   │   ├── BountyLogo.tsx      # Logo component (uses /public/bounty picture.jpg)
+│   │   ├── BountyLogo.tsx      # Logo component (uses /public/BOUNTY_CART_YELLOW.svg)
 │   │   ├── Sidebar.tsx         # Dark sidebar with gold active states
 │   │   ├── Header.tsx          # Bounty-branded top bar (used by demo routes)
 │   │   └── Footer.tsx          # Bounty-branded footer (used by demo routes)
@@ -124,6 +124,8 @@ my-tanstack-app/
 │   ├── lib/
 │   │   ├── auth.ts             # better-auth server config
 │   │   ├── auth-client.ts      # better-auth client
+│   │   ├── sentry.ts           # Sentry helpers (withSentryServerSpan, etc.)
+│   │   ├── website-crawler.ts  # Website SEO crawler engine
 │   │   └── utils.ts            # shadcn cn() utility
 │   ├── routes/
 │   │   ├── __root.tsx          # HTML shell + devtools (no nav chrome)
@@ -134,11 +136,19 @@ my-tanstack-app/
 │   │   │   ├── reviews.tsx     # Review Tracker     → /reviews
 │   │   │   ├── citations.tsx   # Citation Manager   → /citations
 │   │   │   ├── locations.tsx   # Location Manager   → /locations
-│   │   │   └── settings.tsx    # Settings           → /settings
+│   │   │   ├── settings.tsx    # Settings           → /settings
+│   │   │   ├── website.tsx     # Website SEO Dashboard → /website
+│   │   │   └── website/        # Website SEO Module pages
+│   │   │       ├── pages.tsx   # Pages List         → /website/pages
+│   │   │       ├── pages.$pageId.tsx # Page Detail  → /website/pages/:id
+│   │   │       ├── issues.tsx  # Issues Manager     → /website/issues
+│   │   │       └── backlinks.tsx # Backlinks        → /website/backlinks
 │   │   ├── about.tsx           # About              → /about
 │   │   ├── api.trpc.$.tsx      # tRPC handler       → /api/trpc/*
 │   │   └── demo/               # Dev demos (preserved as-is)
 │   └── styles.css              # Tailwind v4 + Bounty brand CSS vars
+├── scripts/                    # CLI scripts
+│   └── crawl-website.ts        # Website SEO crawler CLI
 ├── drizzle.config.ts
 ├── vite.config.ts
 ├── biome.json
@@ -191,6 +201,11 @@ bun run db:studio         # Open Drizzle Studio (local DB GUI)
 bun run check             # Biome: lint + format check
 bun run format            # Biome: format (writes)
 bun run lint              # Biome: lint only
+
+# Website SEO Crawler
+bun run crawl:website <url>       # Crawl single page
+bun run crawl:website --full      # Crawl common ecommerce pages
+bun run crawl:website --homepage  # Crawl homepage only
 
 # Build & Deploy
 bun run build             # Production build
@@ -255,6 +270,108 @@ import { db } from '#/db/index'
 import { db } from '#/db'
 ```
 
+## Agent Guidelines — Documentation Policy
+
+**CRITICAL:** Do NOT create unnecessary markdown files or documentation.
+
+**Only create MD files when:**
+- Absolutely necessary for project operation (e.g., README with setup instructions)
+- Documenting extremely complex architectural decisions that affect multiple files
+- Recording critical business logic that cannot be understood from code alone
+
+**Never create:**
+- Status reports or summaries for the user
+- Testing guides or checklists
+- "What to expect" documents
+- Setup completion reports
+- Any documentation that explains what the code already explains
+
+**Instead:** Answer user questions directly in chat. The code and this AGENTS.md file should be the primary documentation.
+
+---
+
+## Module Overview — Website SEO Tracker
+
+**Purpose:** SEO optimization tracking for bountybasket.online (Bounty's ecommerce site)
+
+**Status:** ✅ Fully implemented and working
+
+### Database Tables (7 new tables)
+- `seo_pages` — Tracks every crawled page with SEO scores
+- `seo_issues` — SEO problems (critical, warning, info) per page
+- `seo_keyword_rankings` — Organic keyword position tracking
+- `seo_backlinks` — Inbound link monitoring
+- `seo_content_suggestions` — Content optimization recommendations
+- `seo_competitor_analysis` — Competitor SEO metrics
+- `seo_audit_history` — Historical audit snapshots
+
+### API Layer (tRPC)
+All procedures under `seo.website.*`:
+- `stats` — Dashboard statistics
+- `pages.*` — Page CRUD (list, get, create)
+- `issues.*` — Issue management (list, resolve)
+- `backlinks.*` — Backlink tracking (list, create)
+- `keywords.*` — Keyword tracking (list, create)
+- `audit.*` — Audit history (history, create)
+
+### Crawler Engine (`src/lib/website-crawler.ts`)
+- Fetches and parses HTML with Cheerio
+- Performs 20+ SEO checks (title, meta, headings, word count, images, etc.)
+- Calculates SEO score (0-100) based on Content (60%) + Technical (40%)
+- Detects issues with severity levels (1-10) and impact (high/medium/low)
+
+### CLI Script (`scripts/crawl-website.ts`)
+```bash
+bun run crawl:website <url>       # Crawl single page
+bun run crawl:website --full      # Crawl common pages (/about, /shop, etc.)
+bun run crawl:website --homepage  # Crawl homepage only
+```
+
+**Output:** Saves page analysis and issues to database, creates audit history record
+
+### User Interface (5 pages)
+1. `/website` — Dashboard with overall stats, top pages, recent issues
+2. `/website/pages` — Table of all crawled pages with search/filter
+3. `/website/pages/$pageId` — Full page detail with issues and recommendations
+4. `/website/issues` — Issues manager with filters and resolve functionality
+5. `/website/backlinks` — Backlink tracker with add dialog
+
+### SEO Checks Performed
+**Critical (Severity 8-10):**
+- Missing title tag
+- Missing meta description
+- Missing H1 heading
+- Page not indexable (noindex)
+
+**Warnings (Severity 4-6):**
+- Title too short/long
+- Meta description too short/long
+- Thin content (<300 words)
+- No H2 subheadings
+- Missing canonical URL
+- Images missing alt text
+
+**Info (Severity 1-3):**
+- Missing schema markup
+- Few internal links
+
+### Integration Notes
+- All pages wrapped with Sentry spans for error tracking
+- Uses existing auth guard from `_app.tsx` layout
+- Follows Bounty brand tokens (gold accents, dark theme)
+- Uses shadcn/ui components (Table, Card, Badge, Dialog)
+
+### Future Enhancements (Not Implemented)
+- Google Search Console API integration for real keyword rankings
+- Vercel Cron for automated daily crawls
+- Email alerts for critical issues (Resend API)
+- Competitor monitoring automation
+- AI-powered content suggestions (OpenAI API)
+
+**See `WEBSITE-SEO-COMPLETE.md` for full usage guide.**
+
+---
+
 ## Next Steps After Step 2
 
 1. Visit `http://localhost:3000` — the Dashboard should display live data from the database
@@ -264,4 +381,4 @@ import { db } from '#/db'
 
 ---
 
-*Last updated: Step 2 implementation — Database & API Layer*
+*Last updated: Website SEO Module added — Full website optimization tracking for bountybasket.online*

@@ -1,238 +1,244 @@
-Welcome to your new TanStack Start app! 
+# Bounty Supermarket — SEO Tracker
 
-# Getting Started
+> **"Great Savings Everyday"**
 
-To run this application:
+Automates Google Maps ranking monitoring, review tracking, and citation management for Bounty Supermarket branches in Kenya.
+
+---
+
+## Quick Start
 
 ```bash
+# Install dependencies
 bun install
-bun --bun run dev
+
+# Set up environment
+cp .env.example .env.local
+# Edit .env.local with your database URL and API keys
+
+# Push database schema
+bun run db:push
+
+# Seed database with sample data
+bun run db:seed
+
+# Run development server
+bun run dev
 ```
 
-# Building For Production
+Visit http://localhost:3000
 
-To build this application for production:
+---
+
+## Essential Commands
 
 ```bash
-bun --bun run build
+# Development
+bun run dev               # Start dev server (localhost:3000)
+
+# Database
+bun run db:push           # Push schema changes to Neon
+bun run db:seed           # Seed database with sample data
+bun run db:studio         # Open Drizzle Studio (database GUI)
+
+# Website SEO Crawler
+bun run crawl:website <url>     # Crawl single page
+bun run crawl:website --full    # Crawl common pages
+
+# Code Quality
+bun run check             # Run Biome linter + formatter
+bun run format --write    # Format code
+
+# Build & Deploy
+bun run build             # Production build for Vercel
 ```
 
-## Testing
+---
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## Tech Stack
 
-```bash
-bun --bun run test
+| Layer | Technology |
+|---|---|
+| Framework | TanStack Start (React SSR) |
+| Router | TanStack Router (file-based, type-safe) |
+| API | tRPC + TanStack Query |
+| Database | Neon Postgres + Drizzle ORM |
+| Auth | better-auth (Google OAuth + email/password) |
+| UI | shadcn/ui + Tailwind CSS v4 |
+| Charts | Recharts |
+| Monitoring | Sentry |
+| Deployment | Vercel (Edge Functions) |
+
+---
+
+## Project Structure
+
 ```
+my-tanstack-app/
+├── src/
+│   ├── routes/           # File-based routing
+│   │   ├── _app.tsx      # Authenticated layout (sidebar + auth guard)
+│   │   ├── _app/         # Main app pages
+│   │   │   ├── index.tsx         # Dashboard
+│   │   │   ├── rankings.tsx      # Rankings Tracker
+│   │   │   ├── reviews.tsx       # Review Manager
+│   │   │   ├── citations.tsx     # Citation Manager
+│   │   │   ├── locations.tsx     # Location Manager
+│   │   │   ├── settings.tsx      # Settings
+│   │   │   ├── website.tsx       # Website SEO Dashboard 🆕
+│   │   │   └── website/          # Website SEO pages 🆕
+│   │   └── login.tsx     # Login page
+│   ├── components/       # React components
+│   │   ├── ui/           # shadcn/ui components
+│   │   ├── Sidebar.tsx   # Main navigation
+│   │   └── BountyLogo.tsx
+│   ├── db/
+│   │   ├── schema.ts     # Drizzle schema (5 SEO tables)
+│   │   ├── index.ts      # Database instance
+│   │   └── seed.ts       # Sample data seeder
+│   ├── integrations/
+│   │   ├── trpc/         # tRPC API layer
+│   │   ├── better-auth/  # Authentication
+│   │   └── tanstack-query/
+│   └── lib/              # Utilities + API integrations
+│       ├── website-crawler.ts  # Website SEO crawler 🆕
+│       └── sentry.ts           # Sentry utilities 🆕
+├── scripts/              # CLI scripts
+│   └── crawl-website.ts  # Website crawler CLI 🆕
+├── AGENTS.md             # Complete project documentation
+├── APP-GUIDE.md          # Feature guide & how-to
+├── WEBSITE-SEO-COMPLETE.md # Website SEO module guide 🆕
+└── package.json
+```
+
+---
+
+## Features
+
+### ✅ Fully Working Modules
+
+#### Local SEO (Google Maps)
+- **Dashboard** — KPI cards, trend charts, recent activity
+- **Locations Manager** — Add/edit Bounty branches with stats
+- **Rankings Tracker** — Track keyword positions on Google Maps (manual "Check Now" button)
+- **Citation Manager** — Track directory listings & NAP consistency
+- **Settings** — Business info, team management, data exports
+- **Authentication** — Google OAuth + email/password with session persistence
+
+#### Website SEO (bountybasket.online) 🆕
+- **Website Dashboard** (`/website`) — Overall SEO score, pages analyzed, issues
+- **Pages Analysis** (`/website/pages`) — Crawl results, scores, metadata
+- **Page Details** (`/website/pages/$pageId`) — Full SEO analysis per page
+- **Issues Manager** (`/website/issues`) — Track & resolve SEO problems
+- **Backlinks Tracker** (`/website/backlinks`) — Monitor inbound links
+- **Site Crawler** — 20+ automated SEO checks (run via CLI)
+
+### ⏸ Partially Working (Manual Only)
+- **Review Manager** — UI complete, but needs Google Business Profile API for automated sync
+  - Can reply to reviews (stored in database)
+  - Can mark reviews as resolved
+  - Need GBP API key to auto-fetch reviews
+
+---
+
+## Environment Variables
+
+Required variables in `.env.local`:
+
+```env
+# Database (Required)
+DATABASE_URL=postgresql://...
+
+# Auth (Required)
+BETTER_AUTH_SECRET=<random 32+ char string>
+BETTER_AUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+
+# APIs (Optional but recommended)
+GOOGLE_MAPS_API_KEY=<for ranking checks>
+VITE_SENTRY_DSN=<for error tracking>
+```
+
+See `AGENTS.md` for complete setup guide.
+
+---
+
+## Database Schema
+
+| Table | Purpose |
+|---|---|
+| `seo_locations` | Bounty branches (name, address, Google Place ID) |
+| `seo_keywords` | Keywords to track per location |
+| `seo_ranking_snapshots` | Historical Google Maps position data |
+| `seo_reviews` | Customer reviews (Google/Facebook) |
+| `seo_citations` | Business directory listings (NAP tracking) |
+| `seo_settings` | Global business settings |
+| **Website SEO Module (NEW):** |
+| `seo_pages` | bountybasket.online pages (URL, title, meta, scores) |
+| `seo_issues` | SEO problems per page (critical, warning, info) |
+| `seo_keyword_rankings` | Website organic keyword positions |
+| `seo_backlinks` | Inbound links to bountybasket.online |
+| `seo_content_suggestions` | Content optimization ideas |
+| `seo_competitor_analysis` | Competitor SEO metrics |
+| `seo_audit_history` | Historical audit results |
+| **Auth Tables:** |
+| `user`, `session`, `account` | better-auth tables |
+
+---
+
+## What's NOT Working (Review Sync)
+
+**Review syncing from Google is blocked** due to Google Business Profile API requirements:
+
+1. **APIs must be enabled** in Google Cloud Console:
+   - My Business Account Management API
+   - My Business Business Information API
+   - My Business Reviews API
+   - Google Business Profile API
+
+2. **OAuth scope required**: `https://www.googleapis.com/auth/business.manage`
+
+3. **Account must have GBP access**: Your Google account must manage the Bounty Business Profiles
+
+**Current status**: Review UI works, but "Sync All" button returns 403/429 errors until APIs are enabled.
+
+**Workaround**: Manually add reviews to the database for testing.
+
+---
+
+## Deployment
+
+This app is configured for **Vercel**:
+
+1. Push code to GitHub
+2. Import project in Vercel dashboard
+3. Add environment variables in Vercel settings
+4. Deploy
+
+The `vercel.json` and `vite.config.ts` are pre-configured.
+
+---
+
+## Support & Documentation
+
+- See `AGENTS.md` for complete technical documentation
+- See `APP-GUIDE.md` for feature-by-feature guide
+- See `WEBSITE-SEO-COMPLETE.md` for Website SEO module guide
+
+---
+
+Built with ❤️ for Bounty Supermarket Kenya
 
 ## Styling
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
-### Removing Tailwind CSS
+---
 
-If you prefer not to use Tailwind CSS:
+## Learn More
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
-
-```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
-```
-
-
-## Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   bunx --bun @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-bunx --bun @better-auth/cli migrate
-```
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+For TanStack specific documentation:
+- [TanStack Start](https://tanstack.com/start)
+- [TanStack Router](https://tanstack.com/router)
+- [TanStack Query](https://tanstack.com/query)

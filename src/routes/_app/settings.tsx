@@ -69,7 +69,7 @@ function GeneralTab() {
 		defaultValues: {
 			businessName: "Bounty Supermarket",
 			tagline: "Great Savings Everyday",
-			primaryWebsite: "https://bountysupermarket.co.ke",
+			primaryWebsite: "https://www.bountybasket.online",
 			primaryPhone: "+254 20 222 1234",
 			country: "Kenya",
 			timezone: "EAT",
@@ -92,7 +92,7 @@ function GeneralTab() {
 			);
 			form.setFieldValue(
 				"primaryWebsite",
-				settings.primaryWebsite ?? "https://bountysupermarket.co.ke",
+				settings.primaryWebsite ?? "https://www.bountybasket.online",
 			);
 			form.setFieldValue(
 				"primaryPhone",
@@ -101,7 +101,7 @@ function GeneralTab() {
 			form.setFieldValue("country", settings.country ?? "Kenya");
 			form.setFieldValue("timezone", settings.timezone ?? "EAT");
 		}
-	}, [settings]);
+	}, [settings, form.setFieldValue]);
 
 	if (settingsLoading) {
 		return (
@@ -323,7 +323,7 @@ function GeneralTab() {
 								style={{ backgroundColor: "#0A0A0A" }}
 							/>
 							<div>
-								<p className="text-sm font-semibold text-gray-800">
+								<p className="text-sm font-semibold text-gray-100">
 									Bounty Black
 								</p>
 								<p className="text-xs text-gray-400">#0A0A0A</p>
@@ -335,7 +335,7 @@ function GeneralTab() {
 								style={{ backgroundColor: "#D4A017" }}
 							/>
 							<div>
-								<p className="text-sm font-semibold text-gray-800">
+								<p className="text-sm font-semibold text-gray-100">
 									Bounty Gold
 								</p>
 								<p className="text-xs text-gray-400">#D4A017</p>
@@ -387,7 +387,7 @@ function ApiKeyRow({ service }: { service: ApiKeyService }) {
 				<div className="flex flex-col sm:flex-row sm:items-center gap-4">
 					<div className="flex-1 space-y-0.5">
 						<div className="flex items-center gap-2 flex-wrap">
-							<span className="font-semibold text-sm text-gray-900">
+							<span className="font-semibold text-sm text-foreground">
 								{service.name}
 							</span>
 							{service.status === "configured" ? (
@@ -412,7 +412,9 @@ function ApiKeyRow({ service }: { service: ApiKeyService }) {
 								</Badge>
 							)}
 						</div>
-						<p className="text-xs text-gray-500">{service.description}</p>
+						<p className="text-xs text-muted-foreground">
+							{service.description}
+						</p>
 					</div>
 					<div className="flex items-center gap-2 w-full sm:w-64">
 						<div className="relative flex-1">
@@ -427,7 +429,7 @@ function ApiKeyRow({ service }: { service: ApiKeyService }) {
 							/>
 							<button
 								type="button"
-								className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+								className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
 								onClick={() => setShow((s) => !s)}
 								aria-label={show ? "Hide key" : "Show key"}
 							>
@@ -522,12 +524,14 @@ function NotificationsTab() {
 						<div className="flex items-start justify-between gap-4">
 							<div className="space-y-0.5">
 								<Label
-									className="text-sm font-semibold text-gray-900 cursor-pointer"
+									className="text-sm font-semibold text-foreground cursor-pointer"
 									htmlFor={setting.id}
 								>
 									{setting.label}
 								</Label>
-								<p className="text-xs text-gray-500">{setting.description}</p>
+								<p className="text-xs text-muted-foreground">
+									{setting.description}
+								</p>
 							</div>
 							<Switch
 								id={setting.id}
@@ -549,6 +553,18 @@ function NotificationsTab() {
 
 function DataTab() {
 	const trpc = useTRPC();
+	const queryClient = useQueryClient();
+
+	const { mutate: syncAll, isPending: syncing } = useMutation({
+		...trpc.seo.syncAll.mutationOptions(),
+		onSuccess: (data) => {
+			queryClient.invalidateQueries();
+			alert(data.message);
+		},
+		onError: (err) => {
+			alert(`Sync failed: ${err.message}`);
+		},
+	});
 
 	// Fetch data for exports
 	const { data: rankingsData } = useQuery(
@@ -660,10 +676,10 @@ function DataTab() {
 				<CardContent className="pt-4 pb-4">
 					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-0.5">
-							<p className="font-semibold text-sm text-gray-900">
+							<p className="font-semibold text-sm text-foreground">
 								Export Rankings Data
 							</p>
-							<p className="text-xs text-gray-500">
+							<p className="text-xs text-muted-foreground">
 								Download all ranking snapshots as CSV.
 							</p>
 						</div>
@@ -685,10 +701,10 @@ function DataTab() {
 				<CardContent className="pt-4 pb-4">
 					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-0.5">
-							<p className="font-semibold text-sm text-gray-900">
+							<p className="font-semibold text-sm text-foreground">
 								Export Reviews
 							</p>
-							<p className="text-xs text-gray-500">
+							<p className="text-xs text-muted-foreground">
 								Download all reviews with sentiment tags as CSV.
 							</p>
 						</div>
@@ -710,10 +726,10 @@ function DataTab() {
 				<CardContent className="pt-4 pb-4">
 					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-0.5">
-							<p className="font-semibold text-sm text-gray-900">
+							<p className="font-semibold text-sm text-foreground">
 								Export Citations
 							</p>
-							<p className="text-xs text-gray-500">
+							<p className="text-xs text-muted-foreground">
 								Download citation audit report as PDF.
 							</p>
 						</div>
@@ -735,10 +751,10 @@ function DataTab() {
 				<CardContent className="pt-4 pb-4">
 					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-0.5">
-							<p className="font-semibold text-sm text-gray-900">
+							<p className="font-semibold text-sm text-foreground">
 								Sync All Data
 							</p>
-							<p className="text-xs text-gray-500">
+							<p className="text-xs text-muted-foreground">
 								Manually trigger a full data refresh from all sources.
 							</p>
 						</div>
@@ -746,9 +762,11 @@ function DataTab() {
 							size="sm"
 							className="gap-2 shrink-0"
 							style={{ backgroundColor: "#D4A017", color: "#000" }}
+							disabled={syncing}
+							onClick={() => syncAll()}
 						>
-							<RefreshCw size={14} />
-							Sync Now
+							<RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+							{syncing ? "Syncing..." : "Sync Now"}
 						</Button>
 					</div>
 				</CardContent>
@@ -770,10 +788,10 @@ function DataTab() {
 				<CardContent>
 					<div className="flex items-center justify-between gap-4">
 						<div className="space-y-0.5">
-							<p className="text-sm font-medium text-gray-800">
+							<p className="text-sm font-medium text-foreground">
 								Clear all cached data
 							</p>
-							<p className="text-xs text-gray-500">
+							<p className="text-xs text-muted-foreground">
 								Removes all locally cached ranking snapshots and review data.
 								Live data will be re-fetched on next sync.
 							</p>
@@ -848,7 +866,7 @@ function TeamTab() {
 							return (
 								<div
 									key={u.id}
-									className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 px-3 py-2.5"
+									className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 px-3 py-2.5"
 								>
 									<Avatar className="h-9 w-9 shrink-0">
 										{u.image && (
@@ -865,10 +883,12 @@ function TeamTab() {
 										</AvatarFallback>
 									</Avatar>
 									<div className="flex-1 min-w-0">
-										<p className="text-sm font-semibold text-gray-900 truncate">
+										<p className="text-sm font-semibold text-foreground truncate">
 											{u.name ?? "Unnamed User"}
 										</p>
-										<p className="text-xs text-gray-500 truncate">{u.email}</p>
+										<p className="text-xs text-muted-foreground truncate">
+											{u.email}
+										</p>
 									</div>
 									<div className="text-right shrink-0">
 										<p className="text-xs text-gray-400">
@@ -907,22 +927,19 @@ function TeamTab() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 
-export function SettingsPage() {
+function SettingsPage() {
 	return (
-		<div
-			className="min-h-screen"
-			style={{ backgroundColor: "var(--bounty-content-bg)" }}
-		>
+		<div className="min-h-screen" style={{ backgroundColor: "#0A0A0A" }}>
 			<div className="max-w-screen-lg mx-auto px-6 py-8 space-y-6">
 				{/* Header */}
 				<div>
 					<h1
-						className="text-2xl font-bold text-gray-900"
+						className="text-2xl font-bold text-foreground"
 						style={{ fontFamily: "Fraunces, serif" }}
 					>
 						Settings
 					</h1>
-					<p className="text-sm text-gray-500 mt-0.5">
+					<p className="text-sm text-gray-400 mt-0.5">
 						Configure your SEO tracker preferences and integrations
 					</p>
 				</div>

@@ -9,10 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TestRouteImport } from './routes/test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as LoginViewerRouteImport } from './routes/login.viewer'
+import { Route as LoginAdminRouteImport } from './routes/login.admin'
+import { Route as AppWebsiteRouteImport } from './routes/_app/website'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppReviewsRouteImport } from './routes/_app/reviews'
 import { Route as AppRankingsRouteImport } from './routes/_app/rankings'
@@ -20,8 +24,17 @@ import { Route as AppLocationsRouteImport } from './routes/_app/locations'
 import { Route as AppCitationsRouteImport } from './routes/_app/citations'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api.trpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AppWebsitePagesRouteImport } from './routes/_app/website/pages'
+import { Route as AppWebsiteIssuesRouteImport } from './routes/_app/website/issues'
+import { Route as AppWebsiteBacklinksRouteImport } from './routes/_app/website/backlinks'
 import { Route as AppRankingsKeywordIdRouteImport } from './routes/_app/rankings.$keywordId'
+import { Route as AppWebsitePagesPageIdRouteImport } from './routes/_app/website/pages.$pageId'
 
+const TestRoute = TestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -39,6 +52,21 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const LoginViewerRoute = LoginViewerRouteImport.update({
+  id: '/viewer',
+  path: '/viewer',
+  getParentRoute: () => LoginRoute,
+} as any)
+const LoginAdminRoute = LoginAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => LoginRoute,
+} as any)
+const AppWebsiteRoute = AppWebsiteRouteImport.update({
+  id: '/website',
+  path: '/website',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -76,52 +104,96 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppWebsitePagesRoute = AppWebsitePagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AppWebsiteRoute,
+} as any)
+const AppWebsiteIssuesRoute = AppWebsiteIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => AppWebsiteRoute,
+} as any)
+const AppWebsiteBacklinksRoute = AppWebsiteBacklinksRouteImport.update({
+  id: '/backlinks',
+  path: '/backlinks',
+  getParentRoute: () => AppWebsiteRoute,
+} as any)
 const AppRankingsKeywordIdRoute = AppRankingsKeywordIdRouteImport.update({
   id: '/$keywordId',
   path: '/$keywordId',
   getParentRoute: () => AppRankingsRoute,
 } as any)
+const AppWebsitePagesPageIdRoute = AppWebsitePagesPageIdRouteImport.update({
+  id: '/$pageId',
+  path: '/$pageId',
+  getParentRoute: () => AppWebsitePagesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/login': typeof LoginRouteWithChildren
+  '/test': typeof TestRoute
   '/citations': typeof AppCitationsRoute
   '/locations': typeof AppLocationsRoute
   '/rankings': typeof AppRankingsRouteWithChildren
   '/reviews': typeof AppReviewsRoute
   '/settings': typeof AppSettingsRoute
+  '/website': typeof AppWebsiteRouteWithChildren
+  '/login/admin': typeof LoginAdminRoute
+  '/login/viewer': typeof LoginViewerRoute
   '/rankings/$keywordId': typeof AppRankingsKeywordIdRoute
+  '/website/backlinks': typeof AppWebsiteBacklinksRoute
+  '/website/issues': typeof AppWebsiteIssuesRoute
+  '/website/pages': typeof AppWebsitePagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/website/pages/$pageId': typeof AppWebsitePagesPageIdRoute
 }
 export interface FileRoutesByTo {
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/login': typeof LoginRouteWithChildren
+  '/test': typeof TestRoute
   '/citations': typeof AppCitationsRoute
   '/locations': typeof AppLocationsRoute
   '/rankings': typeof AppRankingsRouteWithChildren
   '/reviews': typeof AppReviewsRoute
   '/settings': typeof AppSettingsRoute
+  '/website': typeof AppWebsiteRouteWithChildren
+  '/login/admin': typeof LoginAdminRoute
+  '/login/viewer': typeof LoginViewerRoute
   '/': typeof AppIndexRoute
   '/rankings/$keywordId': typeof AppRankingsKeywordIdRoute
+  '/website/backlinks': typeof AppWebsiteBacklinksRoute
+  '/website/issues': typeof AppWebsiteIssuesRoute
+  '/website/pages': typeof AppWebsitePagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/website/pages/$pageId': typeof AppWebsitePagesPageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/login': typeof LoginRouteWithChildren
+  '/test': typeof TestRoute
   '/_app/citations': typeof AppCitationsRoute
   '/_app/locations': typeof AppLocationsRoute
   '/_app/rankings': typeof AppRankingsRouteWithChildren
   '/_app/reviews': typeof AppReviewsRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/website': typeof AppWebsiteRouteWithChildren
+  '/login/admin': typeof LoginAdminRoute
+  '/login/viewer': typeof LoginViewerRoute
   '/_app/': typeof AppIndexRoute
   '/_app/rankings/$keywordId': typeof AppRankingsKeywordIdRoute
+  '/_app/website/backlinks': typeof AppWebsiteBacklinksRoute
+  '/_app/website/issues': typeof AppWebsiteIssuesRoute
+  '/_app/website/pages': typeof AppWebsitePagesRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_app/website/pages/$pageId': typeof AppWebsitePagesPageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,53 +201,85 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/login'
+    | '/test'
     | '/citations'
     | '/locations'
     | '/rankings'
     | '/reviews'
     | '/settings'
+    | '/website'
+    | '/login/admin'
+    | '/login/viewer'
     | '/rankings/$keywordId'
+    | '/website/backlinks'
+    | '/website/issues'
+    | '/website/pages'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/website/pages/$pageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/about'
     | '/login'
+    | '/test'
     | '/citations'
     | '/locations'
     | '/rankings'
     | '/reviews'
     | '/settings'
+    | '/website'
+    | '/login/admin'
+    | '/login/viewer'
     | '/'
     | '/rankings/$keywordId'
+    | '/website/backlinks'
+    | '/website/issues'
+    | '/website/pages'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/website/pages/$pageId'
   id:
     | '__root__'
     | '/_app'
     | '/about'
     | '/login'
+    | '/test'
     | '/_app/citations'
     | '/_app/locations'
     | '/_app/rankings'
     | '/_app/reviews'
     | '/_app/settings'
+    | '/_app/website'
+    | '/login/admin'
+    | '/login/viewer'
     | '/_app/'
     | '/_app/rankings/$keywordId'
+    | '/_app/website/backlinks'
+    | '/_app/website/issues'
+    | '/_app/website/pages'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/_app/website/pages/$pageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AboutRoute: typeof AboutRoute
-  LoginRoute: typeof LoginRoute
+  LoginRoute: typeof LoginRouteWithChildren
+  TestRoute: typeof TestRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/test': {
+      id: '/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof TestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -202,6 +306,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/login/viewer': {
+      id: '/login/viewer'
+      path: '/viewer'
+      fullPath: '/login/viewer'
+      preLoaderRoute: typeof LoginViewerRouteImport
+      parentRoute: typeof LoginRoute
+    }
+    '/login/admin': {
+      id: '/login/admin'
+      path: '/admin'
+      fullPath: '/login/admin'
+      preLoaderRoute: typeof LoginAdminRouteImport
+      parentRoute: typeof LoginRoute
+    }
+    '/_app/website': {
+      id: '/_app/website'
+      path: '/website'
+      fullPath: '/website'
+      preLoaderRoute: typeof AppWebsiteRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -253,12 +378,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/website/pages': {
+      id: '/_app/website/pages'
+      path: '/pages'
+      fullPath: '/website/pages'
+      preLoaderRoute: typeof AppWebsitePagesRouteImport
+      parentRoute: typeof AppWebsiteRoute
+    }
+    '/_app/website/issues': {
+      id: '/_app/website/issues'
+      path: '/issues'
+      fullPath: '/website/issues'
+      preLoaderRoute: typeof AppWebsiteIssuesRouteImport
+      parentRoute: typeof AppWebsiteRoute
+    }
+    '/_app/website/backlinks': {
+      id: '/_app/website/backlinks'
+      path: '/backlinks'
+      fullPath: '/website/backlinks'
+      preLoaderRoute: typeof AppWebsiteBacklinksRouteImport
+      parentRoute: typeof AppWebsiteRoute
+    }
     '/_app/rankings/$keywordId': {
       id: '/_app/rankings/$keywordId'
       path: '/$keywordId'
       fullPath: '/rankings/$keywordId'
       preLoaderRoute: typeof AppRankingsKeywordIdRouteImport
       parentRoute: typeof AppRankingsRoute
+    }
+    '/_app/website/pages/$pageId': {
+      id: '/_app/website/pages/$pageId'
+      path: '/$pageId'
+      fullPath: '/website/pages/$pageId'
+      preLoaderRoute: typeof AppWebsitePagesPageIdRouteImport
+      parentRoute: typeof AppWebsitePagesRoute
     }
   }
 }
@@ -275,12 +428,41 @@ const AppRankingsRouteWithChildren = AppRankingsRoute._addFileChildren(
   AppRankingsRouteChildren,
 )
 
+interface AppWebsitePagesRouteChildren {
+  AppWebsitePagesPageIdRoute: typeof AppWebsitePagesPageIdRoute
+}
+
+const AppWebsitePagesRouteChildren: AppWebsitePagesRouteChildren = {
+  AppWebsitePagesPageIdRoute: AppWebsitePagesPageIdRoute,
+}
+
+const AppWebsitePagesRouteWithChildren = AppWebsitePagesRoute._addFileChildren(
+  AppWebsitePagesRouteChildren,
+)
+
+interface AppWebsiteRouteChildren {
+  AppWebsiteBacklinksRoute: typeof AppWebsiteBacklinksRoute
+  AppWebsiteIssuesRoute: typeof AppWebsiteIssuesRoute
+  AppWebsitePagesRoute: typeof AppWebsitePagesRouteWithChildren
+}
+
+const AppWebsiteRouteChildren: AppWebsiteRouteChildren = {
+  AppWebsiteBacklinksRoute: AppWebsiteBacklinksRoute,
+  AppWebsiteIssuesRoute: AppWebsiteIssuesRoute,
+  AppWebsitePagesRoute: AppWebsitePagesRouteWithChildren,
+}
+
+const AppWebsiteRouteWithChildren = AppWebsiteRoute._addFileChildren(
+  AppWebsiteRouteChildren,
+)
+
 interface AppRouteChildren {
   AppCitationsRoute: typeof AppCitationsRoute
   AppLocationsRoute: typeof AppLocationsRoute
   AppRankingsRoute: typeof AppRankingsRouteWithChildren
   AppReviewsRoute: typeof AppReviewsRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppWebsiteRoute: typeof AppWebsiteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -290,15 +472,29 @@ const AppRouteChildren: AppRouteChildren = {
   AppRankingsRoute: AppRankingsRouteWithChildren,
   AppReviewsRoute: AppReviewsRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppWebsiteRoute: AppWebsiteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface LoginRouteChildren {
+  LoginAdminRoute: typeof LoginAdminRoute
+  LoginViewerRoute: typeof LoginViewerRoute
+}
+
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginAdminRoute: LoginAdminRoute,
+  LoginViewerRoute: LoginViewerRoute,
+}
+
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AboutRoute: AboutRoute,
-  LoginRoute: LoginRoute,
+  LoginRoute: LoginRouteWithChildren,
+  TestRoute: TestRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

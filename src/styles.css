@@ -385,3 +385,32 @@ a {
     color: var(--foreground);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDE FOR LOGIN PAGES
+   ═══════════════════════════════════════════════════════════════════════════
+   Apply `.theme-light` class to any container that needs light-themed content.
+   This ensures text is visible on light backgrounds while the rest of the app
+   remains dark-themed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.theme-light {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #d4a017;
+  --primary-foreground: #000000;
+  --secondary: #f4f6f8;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f4f6f8;
+  --muted-foreground: #64748b;
+  --accent: #d4a017;
+  --accent-foreground: #000000;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #d4a017;
+}

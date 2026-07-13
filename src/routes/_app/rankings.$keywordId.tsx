@@ -65,7 +65,7 @@ function KpiCard({
 	return (
 		<Card>
 			<CardHeader className="pb-1">
-				<CardTitle className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+				<CardTitle className="text-xs font-semibold text-gray-300 uppercase tracking-wide">
 					{label}
 				</CardTitle>
 			</CardHeader>
@@ -154,7 +154,7 @@ function KeywordDrilldownPage() {
 
 	if (!keyword) {
 		return (
-			<div className="p-8 text-center text-gray-500">
+			<div className="p-8 text-center text-gray-400">
 				Keyword not found.{" "}
 				<Link to="/rankings" className="text-[#D4A017] underline">
 					Back to Rankings
@@ -164,15 +164,12 @@ function KeywordDrilldownPage() {
 	}
 
 	return (
-		<div
-			className="min-h-screen"
-			style={{ backgroundColor: "var(--bounty-content-bg)" }}
-		>
+		<div className="min-h-screen" style={{ backgroundColor: "#0A0A0A" }}>
 			<div className="max-w-screen-lg mx-auto px-6 py-8 space-y-6">
 				{/* Back link */}
 				<Link
 					to="/rankings"
-					className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+					className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-900 transition-colors"
 				>
 					<ArrowLeft size={15} />
 					Back to Rankings
@@ -196,14 +193,14 @@ function KeywordDrilldownPage() {
 							<Badge
 								className="text-xs px-2 py-0"
 								style={{
-									backgroundColor: "rgba(212,160,23,0.15)",
-									color: "#92610a",
+									backgroundColor: "rgba(212,160,23,0.20)",
+									color: "#6b4800",
 									border: "1px solid rgba(212,160,23,0.35)",
 								}}
 							>
 								{keyword.locationCity}
 							</Badge>
-							<span className="text-xs text-gray-400">
+							<span className="text-xs font-medium text-gray-400">
 								Target: top {keyword.targetPosition}
 							</span>
 						</div>
@@ -283,14 +280,14 @@ function KeywordDrilldownPage() {
 												return v;
 											}
 										}}
-										tick={{ fontSize: 11, fill: "#9CA3AF" }}
+										tick={{ fontSize: 12, fill: "#6B7280" }}
 										tickLine={false}
 										axisLine={false}
 									/>
 									<YAxis
 										reversed
 										domain={[1, 20]}
-										tick={{ fontSize: 11, fill: "#9CA3AF" }}
+										tick={{ fontSize: 12, fill: "#6B7280" }}
 										tickLine={false}
 										axisLine={false}
 										tickFormatter={(v) => `#${v}`}
@@ -356,13 +353,13 @@ function KeywordDrilldownPage() {
 								<Table>
 									<TableHeader>
 										<TableRow className="bg-gray-50 border-b border-gray-200">
-											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500 py-3 px-4">
+											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400 py-3 px-4">
 												Date
 											</TableHead>
-											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500 py-3 px-4">
+											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400 py-3 px-4">
 												Position
 											</TableHead>
-											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500 py-3 px-4">
+											<TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400 py-3 px-4">
 												Source
 											</TableHead>
 										</TableRow>
@@ -373,7 +370,7 @@ function KeywordDrilldownPage() {
 												key={snap.id}
 												className="border-b border-gray-100 hover:bg-gray-50"
 											>
-												<TableCell className="py-3 px-4 text-sm text-gray-700">
+												<TableCell className="py-3 px-4 text-sm text-gray-200">
 													{snap.snapshotDate
 														? (() => {
 																try {

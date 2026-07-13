@@ -206,7 +206,7 @@ function CoverageChecklist({ citations }: { citations: CitationRow[] }) {
 						>
 							{coveragePct}%
 						</span>
-						<p className="text-xs text-gray-400">
+						<p className="text-xs text-muted-foreground">
 							{covered}/{total} covered
 						</p>
 					</div>
@@ -218,21 +218,13 @@ function CoverageChecklist({ citations }: { citations: CitationRow[] }) {
 					{items.map((item) => (
 						<div
 							key={item.name}
-							className="flex items-center gap-3 rounded-lg px-3 py-2.5 border"
-							style={{
-								backgroundColor:
-									item.coverage === "active"
-										? "#F0FDF4"
-										: item.coverage === "issue"
-											? "#FFFBEB"
-											: "#FFF7F7",
-								borderColor:
-									item.coverage === "active"
-										? "#BBF7D0"
-										: item.coverage === "issue"
-											? "#FDE68A"
-											: "#FECACA",
-							}}
+							className={`flex items-center gap-3 rounded-lg px-3 py-2.5 border ${
+								item.coverage === "active"
+									? "bg-green-50/70 dark:bg-green-950/20 border-green-200 dark:border-green-900/50"
+									: item.coverage === "issue"
+										? "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
+										: "bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50"
+							}`}
 						>
 							{/* Status icon */}
 							<div className="shrink-0">
@@ -248,20 +240,22 @@ function CoverageChecklist({ citations }: { citations: CitationRow[] }) {
 							{/* Name + tip */}
 							<div className="flex-1 min-w-0">
 								<div className="flex items-center gap-2 flex-wrap">
-									<span className="text-sm font-medium text-gray-900">
+									<span className="text-sm font-medium text-foreground">
 										{item.name}
 									</span>
 									<span
 										className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
 										style={{
-											backgroundColor: priorityColors[item.priority] + "20",
+											backgroundColor: `${priorityColors[item.priority]}20`,
 											color: priorityColors[item.priority],
 										}}
 									>
 										{priorityLabels[item.priority]}
 									</span>
 								</div>
-								<p className="text-xs text-gray-500 mt-0.5">{item.tip}</p>
+								<p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">
+									{item.tip}
+								</p>
 							</div>
 
 							{/* Status + link */}
@@ -351,7 +345,7 @@ function StatusBadge({ status }: { status: CitationRow["status"] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function CitationsPage() {
+function CitationsPage() {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [form, setForm] = useState({
@@ -409,7 +403,7 @@ export function CitationsPage() {
 				const href = listing || url;
 				return (
 					<div className="flex items-center gap-1.5">
-						<span className="font-medium text-sm text-gray-900 whitespace-nowrap">
+						<span className="font-medium text-sm text-foreground whitespace-nowrap">
 							{directory}
 						</span>
 						{href && (
@@ -430,7 +424,7 @@ export function CitationsPage() {
 			accessorKey: "location",
 			header: "Location",
 			cell: ({ getValue }) => (
-				<span className="text-sm text-gray-600 whitespace-nowrap">
+				<span className="text-sm text-gray-200 dark:text-gray-200 whitespace-nowrap">
 					{getValue() as string}
 				</span>
 			),
@@ -469,13 +463,13 @@ export function CitationsPage() {
 				const val = getValue() as string;
 				if (!val || val === "Never") {
 					return (
-						<span className="text-sm text-gray-500 whitespace-nowrap">
+						<span className="text-sm text-gray-200 dark:text-gray-200 whitespace-nowrap">
 							Never
 						</span>
 					);
 				}
 				return (
-					<span className="text-sm text-gray-500 whitespace-nowrap">
+					<span className="text-sm text-gray-200 dark:text-gray-200 whitespace-nowrap">
 						{format(new Date(val), "MMM d, yyyy")}
 					</span>
 				);
@@ -545,21 +539,18 @@ export function CitationsPage() {
 	);
 
 	return (
-		<div
-			className="min-h-screen"
-			style={{ backgroundColor: "var(--bounty-content-bg)" }}
-		>
+		<div className="min-h-screen" style={{ backgroundColor: "#0A0A0A" }}>
 			<div className="max-w-screen-xl mx-auto px-6 py-8 space-y-6">
 				{/* Header */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div>
 						<h1
-							className="text-2xl font-bold text-gray-900"
+							className="text-2xl font-bold text-white"
 							style={{ fontFamily: "Fraunces, serif" }}
 						>
 							Citation Manager
 						</h1>
-						<p className="text-sm text-gray-500 mt-0.5">
+						<p className="text-sm text-gray-400 mt-0.5">
 							Track NAP consistency across business directories
 						</p>
 					</div>
@@ -578,12 +569,12 @@ export function CitationsPage() {
 					{/* Overall Health */}
 					<Card>
 						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-500">
+							<CardTitle className="text-sm font-semibold text-gray-300">
 								Overall Health
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-2">
-							<span className="text-3xl font-bold text-gray-900">
+							<span className="text-3xl font-bold text-white">
 								{overallHealth}%
 							</span>
 							<Progress value={overallHealth} className="h-2" />
@@ -593,12 +584,12 @@ export function CitationsPage() {
 					{/* Active Listings */}
 					<Card>
 						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-500">
+							<CardTitle className="text-sm font-semibold text-gray-300">
 								Active Listings
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<span className="text-3xl font-bold text-gray-900">
+							<span className="text-3xl font-bold text-white">
 								{liveCitations.filter((c) => c.status === "active").length}
 							</span>
 							<span className="text-lg text-gray-400 font-medium">
@@ -614,12 +605,12 @@ export function CitationsPage() {
 					{/* Issues Found */}
 					<Card>
 						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-500">
+							<CardTitle className="text-sm font-semibold text-gray-300">
 								Issues Found
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="flex items-center gap-3">
-							<span className="text-3xl font-bold text-red-600">
+							<span className="text-3xl font-bold text-red-500">
 								{liveCitations.filter((c) => c.status !== "active").length}
 							</span>
 							<AlertTriangle size={24} className="text-red-400" />
@@ -639,12 +630,12 @@ export function CitationsPage() {
 									{table.getHeaderGroups().map((hg) => (
 										<TableRow
 											key={hg.id}
-											className="bg-gray-50 border-b border-gray-200"
+											className="bg-gray-900 border-b border-gray-800"
 										>
 											{hg.headers.map((header) => (
 												<TableHead
 													key={header.id}
-													className="text-xs font-semibold uppercase tracking-wide text-gray-500 py-3 px-4 text-center first:text-left last:text-left"
+													className="text-xs font-semibold uppercase tracking-wide text-gray-400 py-3 px-4 text-center first:text-left last:text-left"
 												>
 													{flexRender(
 														header.column.columnDef.header,
@@ -659,12 +650,12 @@ export function CitationsPage() {
 									{table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+											className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors"
 										>
 											{row.getVisibleCells().map((cell) => (
 												<TableCell
 													key={cell.id}
-													className="py-3 px-4 align-middle text-center first:text-left last:text-left"
+													className="py-3 px-4 align-middle text-center first:text-left last:text-left text-gray-300"
 												>
 													{flexRender(
 														cell.column.columnDef.cell,
@@ -726,7 +717,7 @@ export function CitationsPage() {
 							<span className="mt-0.5 shrink-0" style={{ color: "#D4A017" }}>
 								•
 							</span>
-							Website URL: <strong>https://bountysupermarket.co.ke</strong> —
+							Website URL: <strong>https://www.bountybasket.online</strong> —
 							use consistent URL format
 						</li>
 					</ul>
@@ -747,7 +738,9 @@ export function CitationsPage() {
 					<div className="space-y-4">
 						{/* Location */}
 						<div className="space-y-1.5">
-							<Label>Branch</Label>
+							<Label className="text-gray-200 dark:text-gray-200 font-medium">
+								Branch
+							</Label>
 							<Select
 								value={form.locationId}
 								onValueChange={(v) => setForm((f) => ({ ...f, locationId: v }))}
@@ -767,19 +760,22 @@ export function CitationsPage() {
 
 						{/* Directory Name */}
 						<div className="space-y-1.5">
-							<Label>Directory Name</Label>
+							<Label className="text-gray-200 dark:text-gray-200 font-medium">
+								Directory Name
+							</Label>
 							<Input
 								placeholder="e.g. Kenya Yellow Pages"
 								value={form.directoryName}
 								onChange={(e) =>
 									setForm((f) => ({ ...f, directoryName: e.target.value }))
 								}
+								className="placeholder:text-gray-400"
 							/>
 						</div>
 
 						{/* Directory URL */}
 						<div className="space-y-1.5">
-							<Label>
+							<Label className="text-gray-200 dark:text-gray-200 font-medium">
 								Directory URL{" "}
 								<span className="text-gray-400 font-normal">(optional)</span>
 							</Label>
@@ -790,12 +786,13 @@ export function CitationsPage() {
 								onChange={(e) =>
 									setForm((f) => ({ ...f, directoryUrl: e.target.value }))
 								}
+								className="placeholder:text-gray-400"
 							/>
 						</div>
 
 						{/* Listing URL */}
 						<div className="space-y-1.5">
-							<Label>
+							<Label className="text-gray-200 dark:text-gray-200 font-medium">
 								Listing URL{" "}
 								<span className="text-gray-400 font-normal">(optional)</span>
 							</Label>
@@ -806,6 +803,7 @@ export function CitationsPage() {
 								onChange={(e) =>
 									setForm((f) => ({ ...f, listingUrl: e.target.value }))
 								}
+								className="placeholder:text-gray-400"
 							/>
 						</div>
 					</div>

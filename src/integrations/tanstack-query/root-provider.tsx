@@ -53,8 +53,10 @@ export default function TanstackQueryProvider({
 	const { queryClient } = context;
 
 	return (
-		<TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-			{children}
-		</TRPCProvider>
+		<QueryClientProvider client={queryClient}>
+			<TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+				{children}
+			</TRPCProvider>
+		</QueryClientProvider>
 	);
 }

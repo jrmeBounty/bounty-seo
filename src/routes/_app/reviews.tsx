@@ -17,9 +17,8 @@ import {
 	MessageCircle,
 	MessageSquare,
 	RefreshCw,
-	Star,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	Area,
 	AreaChart,
@@ -33,6 +32,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { StarRating } from "#/components/StarRating";
 import { Avatar, AvatarFallback } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -109,69 +109,60 @@ function sentimentAvatarColor(sentiment: ReviewRow["sentiment"]): string {
 	return "#d4a017";
 }
 
-function StarRating({ rating }: { rating: number }) {
-	return (
-		<span className="flex items-center gap-0.5">
-			{Array.from({ length: 5 }, (_, i) => (
-				<Star
-					key={i}
-					size={13}
-					fill={i < rating ? "#D4A017" : "none"}
-					stroke={i < rating ? "#D4A017" : "#9ca3af"}
-				/>
-			))}
-			<span className="ml-1 text-xs text-gray-500">{rating}</span>
-		</span>
-	);
-}
-
 // ─── Review Trends ────────────────────────────────────────────────────────────
 
 function ReviewTrendsCard({ reviews }: { reviews: ReviewRow[] }) {
-	// Group reviews by month for trend chart
-	const monthMap = new Map<
-		string,
-		{ total: number; sum: number; positive: number; negative: number }
-	>();
-	for (const r of reviews) {
-		try {
-			const key = format(new Date(r.date), "MMM yy");
-			const existing = monthMap.get(key) ?? {
-				total: 0,
-				sum: 0,
-				positive: 0,
-				negative: 0,
-			};
-			existing.total += 1;
-			existing.sum += r.rating;
-			if (r.sentiment === "positive") existing.positive += 1;
-			if (r.sentiment === "negative") existing.negative += 1;
-			monthMap.set(key, existing);
-		} catch {
-			// skip bad dates
+	// Memoize chart data computation for performance
+	const trendData = useMemo(() => {
+		// Group reviews by month for trend chart
+		const monthMap = new Map<
+			string,
+			{ total: number; sum: number; positive: number; negative: number }
+		>();
+		for (const r of reviews) {
+			try {
+				const key = format(new Date(r.date), "MMM yy");
+				const existing = monthMap.get(key) ?? {
+					total: 0,
+					sum: 0,
+					positive: 0,
+					negative: 0,
+				};
+				existing.total += 1;
+				existing.sum += r.rating;
+				if (r.sentiment === "positive") existing.positive += 1;
+				if (r.sentiment === "negative") existing.negative += 1;
+				monthMap.set(key, existing);
+			} catch {
+				// skip bad dates
+			}
 		}
-	}
-	const trendData = Array.from(monthMap.entries()).map(([month, d]) => ({
-		month,
-		avgRating: parseFloat((d.sum / d.total).toFixed(1)),
-		reviews: d.total,
-		positive: d.positive,
-		negative: d.negative,
-	}));
+		return Array.from(monthMap.entries()).map(([month, d]) => ({
+			month,
+			avgRating: parseFloat((d.sum / d.total).toFixed(1)),
+			reviews: d.total,
+			positive: d.positive,
+			negative: d.negative,
+		}));
+	}, [reviews]);
 
-	// Per-sentiment counts
-	const totalPositive = reviews.filter(
-		(r) => r.sentiment === "positive",
-	).length;
-	const totalNeutral = reviews.filter((r) => r.sentiment === "neutral").length;
-	const totalNegative = reviews.filter(
-		(r) => r.sentiment === "negative",
-	).length;
-	const sentimentData = [
-		{ label: "Positive", count: totalPositive, color: "#22C55E" },
-		{ label: "Neutral", count: totalNeutral, color: "#D4A017" },
-		{ label: "Negative", count: totalNegative, color: "#EF4444" },
-	];
+	// Memoize sentiment data computation
+	const sentimentData = useMemo(() => {
+		const totalPositive = reviews.filter(
+			(r) => r.sentiment === "positive",
+		).length;
+		const totalNeutral = reviews.filter(
+			(r) => r.sentiment === "neutral",
+		).length;
+		const totalNegative = reviews.filter(
+			(r) => r.sentiment === "negative",
+		).length;
+		return [
+			{ label: "Positive", count: totalPositive, color: "#22C55E" },
+			{ label: "Neutral", count: totalNeutral, color: "#D4A017" },
+			{ label: "Negative", count: totalNegative, color: "#EF4444" },
+		];
+	}, [reviews]);
 
 	if (trendData.length === 0) return null;
 
@@ -184,7 +175,7 @@ function ReviewTrendsCard({ reviews }: { reviews: ReviewRow[] }) {
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					{/* Avg Rating Over Time */}
 					<div>
-						<p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
+						<p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
 							Avg Rating by Month
 						</p>
 						<ResponsiveContainer width="100%" height={160}>
@@ -237,7 +228,7 @@ function ReviewTrendsCard({ reviews }: { reviews: ReviewRow[] }) {
 
 					{/* Sentiment breakdown */}
 					<div>
-						<p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
+						<p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
 							Sentiment Breakdown
 						</p>
 						<ResponsiveContainer width="100%" height={160}>
@@ -324,7 +315,7 @@ function PerLocationBreakdown({ reviews }: { reviews: ReviewRow[] }) {
 
 	return (
 		<div>
-			<h2 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">
+			<h2 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wide">
 				By Location
 			</h2>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -341,7 +332,7 @@ function PerLocationBreakdown({ reviews }: { reviews: ReviewRow[] }) {
 						<Card key={loc.city} className="hover:shadow-sm transition-shadow">
 							<CardContent className="p-4 space-y-2">
 								<div className="flex items-start justify-between gap-1">
-									<p className="font-semibold text-sm text-gray-900 leading-tight">
+									<p className="font-semibold text-sm text-foreground leading-tight">
 										{loc.city}
 									</p>
 									<span
@@ -351,7 +342,7 @@ function PerLocationBreakdown({ reviews }: { reviews: ReviewRow[] }) {
 										{loc.avgRating}★
 									</span>
 								</div>
-								<div className="flex items-center gap-3 text-xs text-gray-500">
+								<div className="flex items-center gap-3 text-xs text-gray-400">
 									<span>{loc.total} reviews</span>
 									{loc.unresolved > 0 && (
 										<span className="text-amber-600 font-medium">
@@ -384,8 +375,7 @@ function PerLocationBreakdown({ reviews }: { reviews: ReviewRow[] }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-
-export function ReviewsPage() {
+function ReviewsPage() {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [locationFilter, setLocationFilter] = useState("all");
 	const [ratingFilter, setRatingFilter] = useState("all");
@@ -434,6 +424,19 @@ export function ReviewsPage() {
 				queryKey: trpc.seo.reviews.list.queryKey(),
 			});
 			alert(`Auto-tagged ${data.updated} reviews with sentiment.`);
+		},
+	});
+
+	const { mutate: syncAll, isPending: syncAllPending } = useMutation({
+		...trpc.seo.syncAll.mutationOptions(),
+		onSuccess: (data) => {
+			queryClient.invalidateQueries({
+				queryKey: trpc.seo.reviews.list.queryKey(),
+			});
+			alert(data.message);
+		},
+		onError: (error) => {
+			alert(`Sync failed: ${error.message}`);
 		},
 	});
 
@@ -510,7 +513,7 @@ export function ReviewsPage() {
 			accessorKey: "location",
 			header: "Location",
 			cell: ({ getValue }) => (
-				<span className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+				<span className="flex items-center gap-1 text-sm text-gray-300 whitespace-nowrap">
 					<MapPin size={13} className="text-gray-400" />
 					{getValue() as string}
 				</span>
@@ -590,7 +593,7 @@ export function ReviewsPage() {
 				</button>
 			),
 			cell: ({ getValue }) => (
-				<span className="text-sm text-gray-600 whitespace-nowrap">
+				<span className="text-sm text-gray-300 whitespace-nowrap">
 					{format(new Date(getValue() as string), "MMM d, yyyy")}
 				</span>
 			),
@@ -634,7 +637,7 @@ export function ReviewsPage() {
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<span className="text-sm text-gray-600 cursor-default">
+								<span className="text-sm text-gray-300 cursor-default">
 									{truncated}
 								</span>
 							</TooltipTrigger>
@@ -719,28 +722,25 @@ export function ReviewsPage() {
 	}
 
 	return (
-		<div
-			className="min-h-screen"
-			style={{ backgroundColor: "var(--bounty-content-bg)" }}
-		>
+		<div className="min-h-screen" style={{ backgroundColor: "#0A0A0A" }}>
 			<div className="max-w-screen-xl mx-auto px-6 py-8 space-y-6">
 				{/* Header */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div>
 						<h1
-							className="text-2xl font-bold text-gray-900"
+							className="text-2xl font-bold text-gray-100"
 							style={{ fontFamily: "Fraunces, serif" }}
 						>
 							Review Tracker
 						</h1>
-						<p className="text-sm text-gray-500 mt-0.5">
+						<p className="text-sm text-gray-400 mt-0.5">
 							Monitor Google Maps &amp; Facebook reviews across all branches
 						</p>
 					</div>
 					{/* Summary stats */}
 					<div className="flex flex-wrap items-center gap-3 text-sm">
 						<span className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 font-medium text-gray-700 shadow-sm">
-							<MessageCircle size={14} className="text-gray-400" />
+							<MessageCircle size={14} className="text-gray-500" />
 							Total: <strong>{reviewsData?.total ?? 0}</strong>
 						</span>
 						<span className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 font-medium text-gray-700 shadow-sm">
@@ -774,22 +774,103 @@ export function ReviewsPage() {
 								}
 							</strong>
 						</span>
-						<Button
-							variant="outline"
-							size="sm"
-							className="gap-2 self-start sm:self-auto"
-							onClick={() => autoTag()}
-							disabled={autoTagging}
-						>
-							{autoTagging ? (
-								<RefreshCw size={14} className="animate-spin" />
-							) : (
-								<span className="text-sm">✦</span>
-							)}
-							{autoTagging ? "Tagging…" : "Auto-Tag Sentiment"}
-						</Button>
 					</div>
 				</div>
+
+				{/* Action Buttons Row */}
+				<div className="flex flex-wrap gap-3">
+					<Button
+						variant="default"
+						size="default"
+						className="gap-2"
+						style={{ backgroundColor: "#D4A017", color: "#000" }}
+						onClick={() => {
+							const confirmed = confirm(
+								"This will sync reviews from Google Business Profile for all locations. Continue?",
+							);
+							if (confirmed) {
+								syncAll();
+							}
+						}}
+						disabled={syncAllPending}
+					>
+						{syncAllPending ? (
+							<RefreshCw size={16} className="animate-spin" />
+						) : (
+							<RefreshCw size={16} />
+						)}
+						{syncAllPending
+							? "Syncing All Reviews..."
+							: "Sync All Reviews from Google"}
+					</Button>
+					<Button
+						variant="outline"
+						size="default"
+						className="gap-2"
+						onClick={() => autoTag()}
+						disabled={autoTagging}
+					>
+						{autoTagging ? (
+							<RefreshCw size={14} className="animate-spin" />
+						) : (
+							<span className="text-sm">✦</span>
+						)}
+						{autoTagging ? "Tagging…" : "Auto-Tag Sentiment"}
+					</Button>
+				</div>
+
+				{/* Empty state banner */}
+				{liveReviews.length === 0 && !reviewsLoading && (
+					<div
+						className="flex items-start gap-4 rounded-xl border px-6 py-5"
+						style={{
+							backgroundColor: "#1A1A1A",
+							borderColor: "#2A2A2A",
+						}}
+					>
+						<div
+							className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+							style={{ backgroundColor: "rgba(212,160,23,0.15)" }}
+						>
+							<MessageSquare size={24} style={{ color: "#D4A017" }} />
+						</div>
+						<div className="flex-1 min-w-0">
+							<h3 className="text-base font-semibold text-gray-100 mb-1">
+								No Reviews Found
+							</h3>
+							<p className="text-sm text-gray-400 mb-3">
+								Reviews from Google Business Profile will appear here once
+								synced.
+							</p>
+							<div className="space-y-2 text-xs text-gray-400">
+								<p className="flex items-start gap-2">
+									<span className="text-bounty-gold mt-0.5">1.</span>
+									<span>
+										Make sure you've added locations with valid Google Place IDs
+									</span>
+								</p>
+								<p className="flex items-start gap-2">
+									<span className="text-bounty-gold mt-0.5">2.</span>
+									<span>
+										Sign in with a Google account that manages the Business
+										Profile
+									</span>
+								</p>
+								<p className="flex items-start gap-2">
+									<span className="text-bounty-gold mt-0.5">3.</span>
+									<span>Click "Sync All Reviews from Google" button above</span>
+								</p>
+							</div>
+							<div className="mt-4 pt-3 border-t border-gray-700">
+								<p className="text-xs text-gray-400">
+									<strong className="text-gray-400">Note:</strong> This app
+									fetches REAL reviews from Google. It does not create fake or
+									sample reviews.
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
 
 				{/* Low-star alert banner */}
 				{unresolvedNegative.length > 0 && (
@@ -914,12 +995,12 @@ export function ReviewsPage() {
 									{table.getHeaderGroups().map((hg) => (
 										<TableRow
 											key={hg.id}
-											className="bg-gray-50 border-b border-gray-200"
+											className="bg-gray-900 border-b border-gray-800"
 										>
 											{hg.headers.map((header) => (
 												<TableHead
 													key={header.id}
-													className="text-xs font-semibold uppercase tracking-wide text-gray-500 py-3 px-4"
+													className="text-xs font-semibold uppercase tracking-wide text-gray-400 py-3 px-4"
 												>
 													{flexRender(
 														header.column.columnDef.header,
@@ -934,7 +1015,7 @@ export function ReviewsPage() {
 									{table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+											className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors"
 										>
 											{row.getVisibleCells().map((cell) => (
 												<TableCell
@@ -966,7 +1047,7 @@ export function ReviewsPage() {
 				</Card>
 
 				{/* Pagination info */}
-				<p className="text-sm text-gray-500 text-right">
+				<p className="text-sm text-gray-400 text-right">
 					Showing <strong>{table.getRowModel().rows.length}</strong> of{" "}
 					<strong>{liveReviews.length}</strong> reviews
 				</p>

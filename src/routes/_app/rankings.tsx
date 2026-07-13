@@ -271,15 +271,20 @@ function RankingsPage() {
 	});
 
 	// Check Now mutation
-	const { mutate: checkNow, isPending: checking } = useMutation({
+	const { mutate: checkNow, variables: checkingVariables } = useMutation({
 		...trpc.seo.rankings.checkNow.mutationOptions(),
-		onSuccess: (data) => {
+		onSuccess: () => {
+			// Only invalidate the specific keyword to avoid refreshing all
 			queryClient.invalidateQueries({
 				queryKey: trpc.seo.keywords.list.queryKey(),
 			});
-			console.log("[Check Now]", data.message);
 		},
 	});
+
+	// Helper to check if a specific keyword is being checked
+	const isKeywordChecking = (keywordId: number) => {
+		return checkingVariables?.keywordId === keywordId;
+	};
 
 	// ── Map live data to KeywordRow shape ──────────────────────────────────────
 
@@ -461,9 +466,14 @@ function RankingsPage() {
 										?.locationId ?? 0,
 							})
 						}
-						disabled={checking}
+						disabled={isKeywordChecking(row.original.id)}
 					>
-						<RefreshCw size={12} className={checking ? "animate-spin" : ""} />
+						<RefreshCw
+							size={12}
+							className={
+								isKeywordChecking(row.original.id) ? "animate-spin" : ""
+							}
+						/>
 						Check
 					</Button>
 					<Button
@@ -913,7 +923,7 @@ function RankingsPage() {
 							<div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
 								<span className="text-2xl">✓</span>
 							</div>
-							<p className="font-semibold text-gray-900">
+							<p className="font-semibold text-foreground">
 								{importRows.length} keywords imported successfully!
 							</p>
 							<Button
@@ -986,10 +996,10 @@ function RankingsPage() {
 												key={i}
 												className="flex items-center gap-3 px-3 py-2 text-sm"
 											>
-												<span className="flex-1 text-gray-800 truncate">
+												<span className="flex-1 text-gray-100 truncate">
 													{row.term}
 												</span>
-												<span className="text-xs text-gray-500 shrink-0">
+												<span className="text-xs text-gray-400 shrink-0">
 													{row.category}
 												</span>
 												<span className="text-xs text-gray-400 shrink-0">
@@ -1009,7 +1019,7 @@ function RankingsPage() {
 							{/* Progress bar while importing */}
 							{importStatus === "importing" && (
 								<div className="space-y-1">
-									<div className="flex justify-between text-xs text-gray-500">
+									<div className="flex justify-between text-xs text-gray-400">
 										<span>Importing…</span>
 										<span>
 											{importProgress} / {importRows.length}

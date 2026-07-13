@@ -27,7 +27,7 @@ export default function Header() {
 				</span>
 			</Link>
 
-			<nav className="ml-4 flex items-center gap-4 text-xs text-[#6B7280]">
+			<nav className="ml-4 flex items-center gap-4 text-xs text-[#A1A8B3]">
 				<Link
 					to="/"
 					className="transition-colors hover:text-white no-underline"
@@ -50,7 +50,7 @@ export default function Header() {
 				</Link>
 			</nav>
 
-			<div className="ml-auto text-[10px] text-[#4B5563]">
+			<div className="ml-auto text-[10px] text-[#6B7280]">
 				Demo Routes — Development Only
 			</div>
 		</header>

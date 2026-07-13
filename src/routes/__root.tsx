@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { ErrorBoundary } from "#/components/ErrorBoundary";
+import { NotFound } from "#/components/NotFound";
 import type { TRPCRouter } from "#/integrations/trpc/router";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
@@ -33,10 +35,23 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
-			{ rel: "icon", href: "/bounty picture.jpg", type: "image/jpeg" },
+			{ rel: "icon", href: "/BOUNTY_CART_YELLOW.svg", type: "image/svg+xml" },
 		],
+		scripts: import.meta.env.PROD
+			? [
+					{
+						type: "module",
+						children: `import './instrument.client.mjs'`,
+					},
+				]
+			: undefined,
 	}),
 	shellComponent: RootDocument,
+	// Global error boundary - renders ErrorBoundary component without wrapping in RootDocument
+	// to avoid HTML nesting issues
+	errorComponent: ErrorBoundary,
+	// Global 404 handler - renders NotFound component when no route matches
+	notFoundComponent: NotFound,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {

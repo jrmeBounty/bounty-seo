@@ -44,6 +44,12 @@ const NAV_ITEMS = [
 		exact: false,
 	},
 	{
+		href: "/website" as const,
+		label: "Website SEO",
+		icon: BarChart3,
+		exact: false,
+	},
+	{
 		href: "/settings" as const,
 		label: "Settings",
 		icon: Settings,
@@ -79,7 +85,7 @@ export function Sidebar() {
 					>
 						SUPERMARKET
 					</span>
-					<span className="mt-0.5 text-[10px] tracking-wide text-[#4B5563]">
+					<span className="mt-0.5 text-[10px] tracking-wide text-[#9CA3AF]">
 						SEO Tracker
 					</span>
 				</div>
@@ -138,7 +144,7 @@ export function Sidebar() {
 				/>
 
 				{/* ─── Analytics Quick-links ───────────────────────────────────── */}
-				<p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-[#4B5563]">
+				<p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-[#8B95A3]">
 					Quick Stats
 				</p>
 				<div className="space-y-1 px-2">
@@ -167,7 +173,7 @@ export function Sidebar() {
 							className="flex items-center justify-between rounded-md px-2 py-1.5"
 							style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
 						>
-							<span className="text-[11px] text-[#6B7280]">{label}</span>
+							<span className="text-[11px] text-[#A1A8B3]">{label}</span>
 							<span className="text-xs font-semibold" style={{ color }}>
 								{trend} {value}
 							</span>
@@ -202,7 +208,8 @@ export function Sidebar() {
 								{session.user.name ?? "User"}
 							</p>
 							<p className="truncate text-[10px] text-[#6B7280]">
-								{session.user.email}
+								{/*{session.user.email}*/}
+								SEO Manager
 							</p>
 						</div>
 						<button
@@ -223,10 +230,10 @@ export function Sidebar() {
 							B
 						</div>
 						<div className="min-w-0 flex-1">
-							<p className="truncate text-xs font-medium text-white">
-								Bounty Admin
+							<p className="truncate text-[10px] text-[#9CA3AF]">
+								{session.user.email}
 							</p>
-							<p className="truncate text-[10px] text-[#6B7280]">SEO Manager</p>
+							<p className="truncate text-[10px] text-[#9CA3AF]">SEO Manager</p>
 						</div>
 						<BarChart3 size={14} style={{ color: "var(--bounty-gold)" }} />
 					</div>
