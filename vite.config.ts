@@ -23,46 +23,21 @@ export default defineConfig({
 		viteReact(),
 	],
 	// SSR configuration for Vercel Edge Functions
-	// COMPREHENSIVE SOLUTION: Bundle everything except server-only packages
+	// ULTIMATE SOLUTION: Bundle absolutely everything except database drivers
 	ssr: {
-		// ===== OPTION 1: SAFEST - Bundle EVERYTHING =====
-		// This ensures no package is ever missed
+		// Bundle EVERYTHING - no exceptions except what's explicitly external
 		noExternal: true,
 		
-		// Only these specific packages remain external
-		// (They have native bindings or Vercel provides them)
+		// ONLY these specific packages can remain external
+		// (They have native bindings that MUST be provided by the runtime)
 		external: [
-			// Database packages (native bindings)
+			// Database drivers with native bindings - MUST be external
 			"@neondatabase/serverless",
 			"pg",
 			"pg-native",
 			"pg-pool",
-			"pg-query-stream",
 			
-			// ORM packages (server-only, optimized by Vercel)
-			"drizzle-orm",
-			"drizzle-kit",
-			
-			// Auth (may have native crypto dependencies)
-			"better-auth",
-			
-			// Monitoring (large, Vercel optimizes it)
-			"@sentry/tanstackstart-react",
-			"@sentry/node",
-			"@sentry/core",
-			
-			// Build tools (never needed at runtime)
-			"vite",
-			"@vitejs/plugin-react",
-			"@tanstack/router-plugin",
-			"@tanstack/devtools-vite",
-			"@tailwindcss/vite",
-			"biome",
-			"typescript",
-			"tsx",
-			"vitest",
-			
-			// Node built-ins (always available)
+			// Node built-ins - always available
 			"fs",
 			"path",
 			"crypto",
@@ -79,5 +54,12 @@ export default defineConfig({
 			"tls",
 			"child_process",
 		],
+		
+		// REMOVED FROM EXTERNAL (will now be bundled):
+		// - drizzle-orm (can be bundled)
+		// - drizzle-kit (build tool, not needed at runtime anyway)
+		// - better-auth (can be bundled)
+		// - @sentry/tanstackstart-react (MUST be bundled - was causing your error)
+		// - All build tools (not needed at runtime)
 	},
 });
