@@ -22,6 +22,16 @@ export default defineConfig({
 		}),
 		viteReact(),
 	],
+	// Optimize dependencies
+	optimizeDeps: {
+		include: [
+			"lucide-react",
+			"react",
+			"react-dom",
+			"@tanstack/react-query",
+			"@tanstack/react-router",
+		],
+	},
 	// SSR configuration for Vercel Edge Functions
 	// FINAL FIX: Bundle absolutely everything except Node.js built-ins
 	ssr: {
@@ -77,7 +87,7 @@ export default defineConfig({
 		// ✅ @neondatabase/serverless
 		// ✅ drizzle-orm
 		// ✅ better-auth
-		// ✅ All UI libraries
+		// ✅ All UI libraries (including lucide-react)
 		// ✅ All utilities
 		// = Zero "Module not found" errors possible
 	},
