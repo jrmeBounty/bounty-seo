@@ -23,89 +23,61 @@ export default defineConfig({
 		viteReact(),
 	],
 	// SSR configuration for Vercel Edge Functions
-	// CRITICAL: Bundle ALL packages that need to be available at runtime
+	// COMPREHENSIVE SOLUTION: Bundle everything except server-only packages
 	ssr: {
-		// OPTION 1: Bundle everything (safest, but larger bundle)
-		// noExternal: true,
+		// ===== OPTION 1: SAFEST - Bundle EVERYTHING =====
+		// This ensures no package is ever missed
+		noExternal: true,
 		
-		// OPTION 2: Explicitly list packages to bundle (current approach)
-		// Don't externalize these packages - bundle them into the server code
-		noExternal: [
-			// ===== Core React packages =====
-			"react",
-			"react-dom",
-			"react/jsx-runtime",
-			"react/jsx-dev-runtime",
-			
-			// ===== TanStack Core packages (CRITICAL for Vercel) =====
-			// Router packages
-			"@tanstack/react-router",
-			"@tanstack/router-core",
-			"@tanstack/router-vite-plugin",
-			"@tanstack/react-router-devtools",
-			"@tanstack/react-router-ssr-query",
-			
-			// Start framework
-			"@tanstack/react-start",
-			"@tanstack/start",
-			
-			// Query packages
-			"@tanstack/react-query",
-			"@tanstack/react-query-devtools",
-			"@tanstack/query-core",
-			
-			// Table
-			"@tanstack/react-table",
-			"@tanstack/table-core",
-			
-			// Form
-			"@tanstack/react-form",
-			"@tanstack/form-core",
-			
-			// Store
-			"@tanstack/react-store",
-			"@tanstack/store",
-			
-			// Match sorter
-			"@tanstack/match-sorter-utils",
-			
-			// AI packages (if used)
-			"@tanstack/ai",
-			"@tanstack/ai-react",
-			"@tanstack/ai-client",
-			
-			// ===== tRPC packages =====
-			"@trpc/client",
-			"@trpc/server",
-			"@trpc/tanstack-react-query",
-			
-			// ===== UI libraries =====
-			"lucide-react",
-			"recharts",
-			"class-variance-authority",
-			"clsx",
-			"tailwind-merge",
-			"radix-ui",
-			
-			// ===== Utilities that might have ESM issues =====
-			"superjson",
-			"date-fns",
-			"zod",
-			"cheerio",
-			"isomorphic-dompurify",
-			"highlight.js",
-			"streamdown",
-			"tw-animate-css",
-		],
-		
-		// These MUST remain external (server-side only, have native bindings)
+		// Only these specific packages remain external
+		// (They have native bindings or Vercel provides them)
 		external: [
+			// Database packages (native bindings)
 			"@neondatabase/serverless",
 			"pg",
+			"pg-native",
+			"pg-pool",
+			"pg-query-stream",
+			
+			// ORM packages (server-only, optimized by Vercel)
 			"drizzle-orm",
 			"drizzle-kit",
+			
+			// Auth (may have native crypto dependencies)
 			"better-auth",
+			
+			// Monitoring (large, Vercel optimizes it)
 			"@sentry/tanstackstart-react",
+			"@sentry/node",
+			"@sentry/core",
+			
+			// Build tools (never needed at runtime)
+			"vite",
+			"@vitejs/plugin-react",
+			"@tanstack/router-plugin",
+			"@tanstack/devtools-vite",
+			"@tailwindcss/vite",
+			"biome",
+			"typescript",
+			"tsx",
+			"vitest",
+			
+			// Node built-ins (always available)
+			"fs",
+			"path",
+			"crypto",
+			"http",
+			"https",
+			"stream",
+			"zlib",
+			"url",
+			"buffer",
+			"events",
+			"util",
+			"os",
+			"net",
+			"tls",
+			"child_process",
 		],
 	},
 });
