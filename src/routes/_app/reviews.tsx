@@ -56,7 +56,7 @@ function ReviewsPageDisabled() {
 							</ul>
 						</div>
 
-						<div className="rounded-lg border border-blue-800/30 bg-blue-900/10 p-4">
+						{/* <div className="rounded-lg border border-blue-800/30 bg-blue-900/10 p-4">
 							<p className="text-xs font-semibold uppercase tracking-wide text-blue-400">
 								For Developers
 							</p>
@@ -66,7 +66,7 @@ function ReviewsPageDisabled() {
 							<pre className="mt-2 overflow-x-auto rounded bg-[#1A1A1A] p-2 text-xs text-gray-300">
 git checkout HEAD~1 -- src/routes/_app/reviews.tsx
 							</pre>
-						</div>
+						</div> */}
 					</div>
 				</CardContent>
 			</Card>
