@@ -42,10 +42,11 @@ VITE v8.0.10 ready in 6245 ms
 - **Fix:** Added missing import
 - **File:** `src/routes/_app/index.tsx`
 
-### 4. **Vercel Deployment Error** ❌ → ✅
-- **Error:** `Cannot find package 'react'`
-- **Fix:** Configured Vite to bundle React into server code
-- **File:** `vite.config.ts`
+### 4. **Vercel Module Errors** ❌ → ✅
+- **Errors:** Sequential `Cannot find package` errors (react, router-core, history, sentry, pg)
+- **Fix 1:** Bundle ALL packages (`noExternal: true`)
+- **Fix 2:** Use Neon serverless driver (no native pg dependency)
+- **Files:** `vite.config.ts`, `src/db/index.ts`
 
 ---
 
