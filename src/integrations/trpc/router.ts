@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/tanstackstart-react";
 import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import { and, asc, avg, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "#/db/index";
@@ -25,7 +26,16 @@ import {
 	syncGoogleReviews,
 } from "#/lib/google-business";
 import { getPlaceRanking } from "#/lib/google-maps";
-import { createTRPCRouter, publicProcedure } from "./init";
+import { checkRateLimit } from "#/lib/rate-limit";
+import {
+	adminProcedure,
+	createTRPCRouter,
+	protectedProcedure,
+	publicProcedure,
+	rateLimitedProcedure,
+	requirePermission,
+	staffProcedure,
+} from "./init";
 
 // ─── SEO Tracker: Locations ──────────────────────────────────────────────────
 
@@ -146,7 +156,7 @@ const seoLocationsRouter = {
 			);
 		}),
 
-	create: publicProcedure
+	create: requirePermission("locations.create")
 		.input(
 			z.object({
 				name: z.string().min(2),
@@ -189,7 +199,7 @@ const seoLocationsRouter = {
 			});
 		}),
 
-	update: publicProcedure
+	update: requirePermission("locations.update")
 		.input(
 			z.object({
 				id: z.number().int().positive(),
@@ -299,7 +309,7 @@ const seoKeywordsRouter = {
 			});
 		}),
 
-	create: publicProcedure
+	create: requirePermission("keywords.create")
 		.input(
 			z.object({
 				term: z.string().min(2),
@@ -325,7 +335,7 @@ const seoKeywordsRouter = {
 			});
 		}),
 
-	delete: publicProcedure
+	delete: requirePermission("keywords.delete")
 		.input(z.object({ id: z.number().int().positive() }))
 		.mutation(async ({ input }) => {
 			return Sentry.startSpan(
@@ -337,7 +347,7 @@ const seoKeywordsRouter = {
 			);
 		}),
 
-	update: publicProcedure
+	update: requirePermission("keywords.update")
 		.input(
 			z.object({
 				id: z.number().int().positive(),
@@ -495,7 +505,35 @@ const seoRankingsRouter = {
 			);
 		}),
 
-	checkNow: publicProcedure
+	checkNow: requirePermission("rankings.check")
+		.use(async (opts) => {
+			// Rate limiting check
+			const userId = opts.ctx.user?.id;
+			if (!userId) {
+				throw new TRPCError({
+					code: "UNAUTHORIZED",
+					message: "You must be logged in",
+				});
+			}
+
+			const result = checkRateLimit(userId, "googleMapsCheck");
+			if (!result.allowed) {
+				throw new TRPCError({
+					code: "TOO_MANY_REQUESTS",
+					message: `Rate limit exceeded. Please try again in ${result.retryAfter} seconds.`,
+				});
+			}
+
+			return opts.next({
+				ctx: {
+					...opts.ctx,
+					rateLimit: {
+						remaining: result.remaining,
+						resetAt: result.resetAt,
+					},
+				},
+			});
+		})
 		.input(
 			z.object({
 				keywordId: z.number().int().positive(),
@@ -548,7 +586,7 @@ const seoRankingsRouter = {
 			);
 		}),
 
-	exportAll: publicProcedure.query(async () => {
+	exportAll: requirePermission("data.export").query(async () => {
 		return Sentry.startSpan({ name: "seo.rankings.exportAll" }, async () => {
 			return db
 				.select({
@@ -630,7 +668,7 @@ const seoReviewsRouter = {
 			});
 		}),
 
-	reply: publicProcedure
+	reply: requirePermission("reviews.reply")
 		.input(
 			z.object({
 				reviewId: z.number().int().positive(),
@@ -694,7 +732,7 @@ const seoReviewsRouter = {
 				},
 			);
 		}),
-	resolve: publicProcedure
+	resolve: requirePermission("reviews.resolve")
 		.input(
 			z.object({
 				reviewId: z.number().int().positive(),
@@ -718,7 +756,7 @@ const seoReviewsRouter = {
 			);
 		}),
 
-	autoTag: publicProcedure.mutation(async () => {
+	autoTag: requirePermission("reviews.sync").mutation(async () => {
 		return Sentry.startSpan({ name: "seo.reviews.autoTag" }, async () => {
 			const POSITIVE = [
 				"great",
@@ -796,7 +834,7 @@ const seoReviewsRouter = {
 		});
 	}),
 
-	exportAll: publicProcedure.query(async () => {
+	exportAll: requirePermission("data.export").query(async () => {
 		return Sentry.startSpan({ name: "seo.reviews.exportAll" }, async () => {
 			return db
 				.select({
@@ -866,7 +904,7 @@ const seoCitationsRouter = {
 			});
 		}),
 
-	create: publicProcedure
+	create: requirePermission("citations.create")
 		.input(
 			z.object({
 				locationId: z.number().int().positive(),
@@ -890,7 +928,35 @@ const seoCitationsRouter = {
 			});
 		}),
 
-	checkNow: publicProcedure
+	checkNow: requirePermission("citations.check")
+		.use(async (opts) => {
+			// Rate limiting check
+			const userId = opts.ctx.user?.id;
+			if (!userId) {
+				throw new TRPCError({
+					code: "UNAUTHORIZED",
+					message: "You must be logged in",
+				});
+			}
+
+			const result = checkRateLimit(userId, "citationCheck");
+			if (!result.allowed) {
+				throw new TRPCError({
+					code: "TOO_MANY_REQUESTS",
+					message: `Rate limit exceeded. Please try again in ${result.retryAfter} seconds.`,
+				});
+			}
+
+			return opts.next({
+				ctx: {
+					...opts.ctx,
+					rateLimit: {
+						remaining: result.remaining,
+						resetAt: result.resetAt,
+					},
+				},
+			});
+		})
 		.input(z.object({ citationId: z.number().int().positive() }))
 		.mutation(async ({ input }) => {
 			return Sentry.startSpan(
@@ -1076,7 +1142,7 @@ const usersRouter = {
 		});
 	}),
 
-	updateRole: publicProcedure
+	updateRole: adminProcedure
 		.input(
 			z.object({
 				userId: z.string(),
@@ -1108,7 +1174,7 @@ const seoSettingsRouter = {
 		});
 	}),
 
-	upsert: publicProcedure
+	upsert: requirePermission("settings.update")
 		.input(
 			z.object({
 				businessName: z.string().min(1),
@@ -1278,7 +1344,7 @@ const seoWebsiteRouter = {
 				);
 			}),
 
-		create: publicProcedure
+		create: requirePermission("website.create")
 			.input(
 				z.object({
 					url: z.string().url(),
@@ -1379,7 +1445,7 @@ const seoWebsiteRouter = {
 				);
 			}),
 
-		resolve: publicProcedure
+		resolve: requirePermission("website.update")
 			.input(
 				z.object({
 					issueId: z.number().int().positive(),
@@ -1450,7 +1516,7 @@ const seoWebsiteRouter = {
 				);
 			}),
 
-		create: publicProcedure
+		create: requirePermission("website.create")
 			.input(
 				z.object({
 					targetUrl: z.string().url(),
@@ -1523,7 +1589,7 @@ const seoWebsiteRouter = {
 				);
 			}),
 
-		create: publicProcedure
+		create: requirePermission("website.create")
 			.input(
 				z.object({
 					pageId: z.number().int().positive(),
@@ -1573,7 +1639,7 @@ const seoWebsiteRouter = {
 				);
 			}),
 
-		create: publicProcedure
+		create: requirePermission("website.create")
 			.input(
 				z.object({
 					auditType: z.enum(["full", "quick", "page", "technical"]),
@@ -1618,7 +1684,36 @@ export const trpcRouter = createTRPCRouter({
 		citations: seoCitationsRouter,
 		settings: seoSettingsRouter,
 		website: seoWebsiteRouter,
-		syncAll: publicProcedure.mutation(async ({ ctx }) => {
+		syncAll: requirePermission("data.sync")
+		.use(async (opts) => {
+			// Rate limiting check
+			const userId = opts.ctx.user?.id;
+			if (!userId) {
+				throw new TRPCError({
+					code: "UNAUTHORIZED",
+					message: "You must be logged in",
+				});
+			}
+
+			const result = checkRateLimit(userId, "syncAll");
+			if (!result.allowed) {
+				throw new TRPCError({
+					code: "TOO_MANY_REQUESTS",
+					message: `Rate limit exceeded. Please try again in ${result.retryAfter} seconds.`,
+				});
+			}
+
+			return opts.next({
+				ctx: {
+					...opts.ctx,
+					rateLimit: {
+						remaining: result.remaining,
+						resetAt: result.resetAt,
+					},
+				},
+			});
+		})
+		.mutation(async ({ ctx }) => {
 			return Sentry.startSpan({ name: "seo.syncAll" }, async () => {
 				const userId = ctx.session?.user?.id;
 				let accessToken: string | null = null;

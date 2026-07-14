@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Link2, RefreshCw, Search, TrendingUp } from "lucide-react";
+import { Link2, RefreshCw, Search, Star, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import {
 	Bar,

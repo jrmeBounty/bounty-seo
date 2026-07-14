@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
-import { ErrorBoundary } from "#/components/ErrorBoundary";
+import { ErrorBoundary, PageErrorBoundary } from "#/components/ErrorBoundary";
 import { NotFound } from "#/components/NotFound";
 import type { TRPCRouter } from "#/integrations/trpc/router";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";

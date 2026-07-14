@@ -207,6 +207,116 @@ See `AGENTS.md` for complete setup guide.
 
 ---
 
+## 🔐 Security & Access Control
+
+### Role-Based Access Control (RBAC)
+
+This app implements professional-grade role-based permissions:
+
+| Role | Default | Permissions |
+|------|---------|-------------|
+| **Viewer** | ✅ New users | Read-only access to all data |
+| **Staff** | Promote manually | Create/edit content, sync data, reply to reviews |
+| **Admin** | Promote manually | Full access + settings + user management |
+
+**Key Features:**
+- ✅ **API-level enforcement** — tRPC middleware blocks unauthorized mutations
+- ✅ **UI-level enforcement** — Buttons auto-disable based on permissions
+- ✅ **Graceful error handling** — User-friendly messages, no crashes
+- ✅ **Rate limiting** — Protects Google API quota (e.g., 10 rank checks per minute)
+- ✅ **Input sanitization** — XSS prevention on all user inputs
+- ✅ **Error tracking** — Sentry integration with email alerts
+
+**Promoting users:**
+```sql
+-- Make user an admin (run in Drizzle Studio or database console)
+UPDATE "user" SET role = 'admin' WHERE email = 'jwachira@ict.bountysupermarkets.co.ke';
+
+-- Make user staff
+UPDATE "user" SET role = 'staff' WHERE email = 'user@example.com';
+```
+
+**Or via UI:** Settings → Team Management (admin only)
+
+**See full documentation:** [RBAC-GUIDE.md](./RBAC-GUIDE.md)
+
+### Sentry Error Monitoring
+
+**Setup email alerts:**
+1. Add `VITE_SENTRY_DSN` to `.env.local`
+2. Follow [SENTRY-SETUP.md](./SENTRY-SETUP.md) guide
+3. Configure email: jwachira@ict.bountysupermarkets.co.ke
+
+**What gets tracked:**
+- Fatal errors (app crashes)
+- API errors (Google API failures, database errors)
+- Permission errors
+- Performance issues (slow queries)
+
+---
+
+## 🐛 Troubleshooting
+
+### "Star is not defined" Error (FIXED ✅)
+
+**Error:**
+```
+ReferenceError: Star is not defined
+at DashboardPage index.tsx:266
+```
+
+**Status:** Fixed in latest version (Star icon import added)
+
+**Solution:** Pull latest code and refresh
+
+### "You don't have permission" Error
+
+**Error:**
+```
+❌ You don't have permission to: keywords.create
+```
+
+**Cause:** You're a Viewer (read-only) or don't have the required role
+
+**Solution:**
+1. Contact admin: jwachira@ict.bountysupermarkets.co.ke
+2. Request Staff or Admin role
+3. Admin promotes you via Settings → Team Management
+4. Refresh page (Ctrl+R)
+
+### Google Avatar Image Not Loading
+
+**Error:** `NS_BINDING_ABORTED` for Google profile images
+
+**Cause:** CORS/CSP issues with Google user avatars
+
+**Solution:** This is a cosmetic issue — avatars fallback to initials (e.g., "JW")
+
+### Rate Limit Exceeded
+
+**Error:**
+```
+Rate limit exceeded. Please try again in 428 seconds.
+```
+
+**Cause:** You triggered an expensive operation too many times (e.g., clicked "Check Now" 15 times in 1 minute)
+
+**Solution:**
+- Wait for cooldown period
+- Review rate limits: [RBAC-GUIDE.md](./RBAC-GUIDE.md)
+- If urgent, ask admin to reset your rate limit
+
+### Permission Changes Not Taking Effect
+
+**Issue:** Admin changed your role, but you still can't access features
+
+**Solution:**
+1. Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+2. Clear session: Log out and log back in
+3. Verify role change: Settings → Team → find your name
+
+---
+
 ## Deployment
 
 This app is configured for **Vercel**:
@@ -222,9 +332,15 @@ The `vercel.json` and `vite.config.ts` are pre-configured.
 
 ## Support & Documentation
 
-- See `AGENTS.md` for complete technical documentation
-- See `APP-GUIDE.md` for feature-by-feature guide
-- See `WEBSITE-SEO-COMPLETE.md` for Website SEO module guide
+- **[AGENTS.md](./AGENTS.md)** — Complete technical documentation & architecture
+- **[APP-GUIDE.md](./APP-GUIDE.md)** — Feature-by-feature user guide
+- **[WEBSITE-SEO-COMPLETE.md](./WEBSITE-SEO-COMPLETE.md)** — Website SEO module guide
+- **[RBAC-GUIDE.md](./RBAC-GUIDE.md)** — Role-based access control documentation
+- **[SENTRY-SETUP.md](./SENTRY-SETUP.md)** — Error monitoring & email alerts setup
+
+**Technical Support:**
+- Email: jwachira@ict.bountysupermarkets.co.ke
+- Include: Error message, steps to reproduce, your user role
 
 ---
 

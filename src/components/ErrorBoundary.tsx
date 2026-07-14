@@ -1,168 +1,251 @@
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
-import { Button } from "#/components/ui/button";
-import { Card, CardContent } from "#/components/ui/card";
+/**
+ * Enhanced Error Boundary Component
+ *
+ * Catches React errors gracefully and reports them to Sentry.
+ * Provides user-friendly error messages and recovery options.
+ */
 
-interface ErrorBoundaryProps {
-	error: Error;
-	reset: () => void;
-	fullPage?: boolean;
+import * as Sentry from "@sentry/tanstackstart-react";
+import { AlertCircle, Home, RefreshCw } from "lucide-react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Button } from "#/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "#/components/ui/card";
+
+interface Props {
+	children: ReactNode;
+	fallback?: ReactNode;
+	onError?: (error: Error, errorInfo: ErrorInfo) => void;
+}
+
+interface State {
+	hasError: boolean;
+	error: Error | null;
+	errorInfo: ErrorInfo | null;
 }
 
 /**
- * Global ErrorBoundary component for displaying error states
- * Used by TanStack Router for route-level error boundaries
- *
- * @param error - The error object thrown
- * @param reset - Function to reset the error boundary and retry
- * @param fullPage - Whether to render as a full-page error (default: true)
+ * Production-grade error boundary with Sentry integration
  */
-export function ErrorBoundary({
-	error,
-	reset,
-	fullPage = true,
-}: ErrorBoundaryProps) {
-	const errorMessage = error?.message || "An unexpected error occurred";
-	const isDevelopment = import.meta.env.DEV;
+export class ErrorBoundary extends Component<Props, State> {
+	constructor(props: Props) {
+		super(props);
+		this.state = {
+			hasError: false,
+			error: null,
+			errorInfo: null,
+		};
+	}
 
-	// Full-page error display (for root route errors)
-	if (fullPage) {
-		return (
-			<div
-				className="flex min-h-screen items-center justify-center p-6"
-				style={{ backgroundColor: "#0A0A0A" }}
-			>
-				<Card
-					className="w-full max-w-2xl"
-					style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}
-				>
-					<CardContent className="pt-6">
-						<div className="flex flex-col items-center text-center">
-							{/* Icon */}
-							<div
-								className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-								style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}
-							>
-								<AlertTriangle className="h-8 w-8 text-red-500" />
+	static getDerivedStateFromError(error: Error): State {
+		return {
+			hasError: true,
+			error,
+			errorInfo: null,
+		};
+	}
+
+	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+		// Log to Sentry
+		Sentry.captureException(error, {
+			contexts: {
+				react: {
+					componentStack: errorInfo.componentStack,
+				},
+			},
+		});
+
+		// Call custom error handler if provided
+		this.props.onError?.(error, errorInfo);
+
+		// Update state with error details
+		this.setState({
+			error,
+			errorInfo,
+		});
+
+		// Log to console in development
+		if (process.env.NODE_ENV === "development") {
+			console.error("Error Boundary caught an error:", error, errorInfo);
+		}
+	}
+
+	handleReset = () => {
+		this.setState({
+			hasError: false,
+			error: null,
+			errorInfo: null,
+		});
+	};
+
+	handleReload = () => {
+		window.location.reload();
+	};
+
+	handleGoHome = () => {
+		window.location.href = "/";
+	};
+
+	render() {
+		if (this.state.hasError) {
+			// Use custom fallback if provided
+			if (this.props.fallback) {
+				return this.props.fallback;
+			}
+
+			// Default error UI
+			return (
+				<div className="flex min-h-screen items-center justify-center bg-[#0A0A0A] p-6">
+					<Card
+						className="w-full max-w-2xl"
+						style={{ backgroundColor: "#1A1A1A", borderColor: "#2A2A2A" }}
+					>
+						<CardHeader>
+							<div className="flex items-start gap-4">
+								<div
+									className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg"
+									style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+								>
+									<AlertCircle size={24} className="text-red-400" />
+								</div>
+								<div className="flex-1">
+									<CardTitle className="text-xl text-gray-100">
+										Something went wrong
+									</CardTitle>
+									<CardDescription className="mt-2 text-gray-400">
+										We encountered an error while loading this page. Our team has
+										been notified and will investigate the issue.
+									</CardDescription>
+								</div>
 							</div>
-
-							{/* Title */}
-							<h1
-								className="mb-2 text-2xl font-bold"
-								style={{ color: "#F3F4F6" }}
-							>
-								Something went wrong
-							</h1>
-
-							{/* Message */}
-							<p className="mb-6 text-sm" style={{ color: "#9CA3AF" }}>
-								We encountered an error while loading this page. Please try
-								refreshing or go back to the home page.
-							</p>
-
+						</CardHeader>
+						<CardContent className="space-y-4">
 							{/* Error details (dev only) */}
-							{isDevelopment && (
-								<Card
-									className="mb-6 w-full"
-									style={{
-										backgroundColor: "#111111",
-										borderColor: "#EF4444",
-									}}
-								>
-									<CardContent className="p-4">
-										<div className="text-left">
-											<div
-												className="mb-2 text-xs font-semibold uppercase tracking-wide"
-												style={{ color: "#EF4444" }}
-											>
-												Error Details (Dev Only)
-											</div>
-											<pre
-												className="overflow-x-auto text-xs"
-												style={{
-													color: "#F3F4F6",
-													whiteSpace: "pre-wrap",
-													wordBreak: "break-word",
-												}}
-											>
-												{errorMessage}
+							{process.env.NODE_ENV === "development" &&
+								this.state.error && (
+									<div className="rounded-lg bg-[#252525] p-4">
+										<p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+											Error Details (Dev Only)
+										</p>
+										<pre className="overflow-x-auto text-xs text-red-400">
+											{this.state.error.toString()}
+										</pre>
+										{this.state.errorInfo?.componentStack && (
+											<pre className="mt-2 overflow-x-auto text-xs text-gray-500">
+												{this.state.errorInfo.componentStack}
 											</pre>
-											{error?.stack && (
-												<details className="mt-3">
-													<summary
-														className="cursor-pointer text-xs font-medium"
-														style={{ color: "#9CA3AF" }}
-													>
-														Stack Trace
-													</summary>
-													<pre
-														className="mt-2 overflow-x-auto text-xs"
-														style={{
-															color: "#6B7280",
-															whiteSpace: "pre-wrap",
-															wordBreak: "break-word",
-														}}
-													>
-														{error.stack}
-													</pre>
-												</details>
-											)}
-										</div>
-									</CardContent>
-								</Card>
-							)}
+										)}
+									</div>
+								)}
 
-							{/* Actions */}
-							<div className="flex gap-3">
+							{/* Action buttons */}
+							<div className="flex flex-wrap gap-3">
 								<Button
-									onClick={reset}
-									style={{ backgroundColor: "#D4A017", color: "#000" }}
+									onClick={this.handleReset}
+									className="font-semibold text-black hover:opacity-90"
+									style={{ backgroundColor: "#D4A017" }}
 								>
-									<RefreshCw className="mr-2 h-4 w-4" />
+									<RefreshCw size={16} />
 									Try Again
 								</Button>
 								<Button
+									onClick={this.handleReload}
 									variant="outline"
-									onClick={() => (window.location.href = "/")}
+									className="border-[#2A2A2A] bg-transparent text-gray-300 hover:bg-[#252525]"
 								>
-									<Home className="mr-2 h-4 w-4" />
+									<RefreshCw size={16} />
+									Reload Page
+								</Button>
+								<Button
+									onClick={this.handleGoHome}
+									variant="outline"
+									className="border-[#2A2A2A] bg-transparent text-gray-300 hover:bg-[#252525]"
+								>
+									<Home size={16} />
 									Go Home
 								</Button>
 							</div>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
-		);
-	}
 
-	// Inline error display (for component-level errors)
+							{/* Support information */}
+							<div className="rounded-lg border border-[#2A2A2A] bg-[#252525] p-4">
+								<p className="text-sm text-gray-300">
+									<strong>Need help?</strong>
+								</p>
+								<p className="mt-1 text-xs text-gray-400">
+									If this issue persists, please contact the IT team at{" "}
+									<a
+										href="mailto:jwachira@ict.bountysupermarkets.co.ke"
+										className="text-[#D4A017] hover:underline"
+									>
+										jwachira@ict.bountysupermarkets.co.ke
+									</a>{" "}
+									with details about what you were trying to do when the error
+									occurred.
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			);
+		}
+
+		return this.props.children;
+	}
+}
+
+/**
+ * Hook-based error boundary for functional components
+ * Use this in route files to catch errors at the page level
+ */
+export function PageErrorBoundary({ children }: { children: ReactNode }) {
 	return (
-		<Card
-			className="m-4"
-			style={{
-				backgroundColor: "#1A1A1A",
-				borderColor: "#EF4444",
+		<ErrorBoundary
+			onError={(error, errorInfo) => {
+				// Additional logging or analytics
+				console.error("Page error:", error, errorInfo);
 			}}
 		>
-			<CardContent className="p-4">
-				<div className="flex items-start gap-3">
-					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
-					<div className="flex-1">
-						<div className="mb-1 text-sm font-semibold text-red-500">
-							Error Loading Component
+			{children}
+		</ErrorBoundary>
+	);
+}
+
+/**
+ * Compact error boundary for small components
+ * Shows inline error message instead of full page
+ */
+export function InlineErrorBoundary({ children }: { children: ReactNode }) {
+	return (
+		<ErrorBoundary
+			fallback={
+				<div
+					className="rounded-lg border p-4"
+					style={{
+						backgroundColor: "rgba(239,68,68,0.05)",
+						borderColor: "rgba(239,68,68,0.2)",
+					}}
+				>
+					<div className="flex items-start gap-3">
+						<AlertCircle size={20} className="shrink-0 text-red-400" />
+						<div className="flex-1">
+							<p className="text-sm font-semibold text-gray-200">
+								Failed to load this section
+							</p>
+							<p className="mt-1 text-xs text-gray-400">
+								Try refreshing the page. If the problem persists, contact
+								support.
+							</p>
 						</div>
-						<div className="mb-3 text-xs text-gray-400">{errorMessage}</div>
-						<Button
-							size="sm"
-							onClick={reset}
-							style={{ backgroundColor: "#D4A017", color: "#000" }}
-						>
-							<RefreshCw className="mr-2 h-3 w-3" />
-							Retry
-						</Button>
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+			}
+		>
+			{children}
+		</ErrorBoundary>
 	);
 }

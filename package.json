@@ -20,7 +20,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "db:seed": "dotenv -e .env.local -- tsx src/db/seed.ts",
-    "crawl:website": "dotenv -e .env.local -- tsx scripts/crawl-website.ts"
+    "crawl:website": "dotenv -e .env.local -- tsx scripts/crawl-website.ts",
+    "verify:rbac": "tsx scripts/verify-rbac.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
