@@ -23,36 +23,89 @@ export default defineConfig({
 		viteReact(),
 	],
 	// SSR configuration for Vercel Edge Functions
-	// Bundle all dependencies that need to be available at runtime
+	// CRITICAL: Bundle ALL packages that need to be available at runtime
 	ssr: {
+		// OPTION 1: Bundle everything (safest, but larger bundle)
+		// noExternal: true,
+		
+		// OPTION 2: Explicitly list packages to bundle (current approach)
 		// Don't externalize these packages - bundle them into the server code
 		noExternal: [
-			// Core React packages
+			// ===== Core React packages =====
 			"react",
 			"react-dom",
-			// TanStack packages that need to be bundled
-			"@tanstack/react-query",
+			"react/jsx-runtime",
+			"react/jsx-dev-runtime",
+			
+			// ===== TanStack Core packages (CRITICAL for Vercel) =====
+			// Router packages
 			"@tanstack/react-router",
+			"@tanstack/router-core",
+			"@tanstack/router-vite-plugin",
+			"@tanstack/react-router-devtools",
+			"@tanstack/react-router-ssr-query",
+			
+			// Start framework
 			"@tanstack/react-start",
+			"@tanstack/start",
+			
+			// Query packages
+			"@tanstack/react-query",
+			"@tanstack/react-query-devtools",
+			"@tanstack/query-core",
+			
+			// Table
 			"@tanstack/react-table",
+			"@tanstack/table-core",
+			
+			// Form
 			"@tanstack/react-form",
+			"@tanstack/form-core",
+			
+			// Store
 			"@tanstack/react-store",
-			// UI libraries
+			"@tanstack/store",
+			
+			// Match sorter
+			"@tanstack/match-sorter-utils",
+			
+			// AI packages (if used)
+			"@tanstack/ai",
+			"@tanstack/ai-react",
+			"@tanstack/ai-client",
+			
+			// ===== tRPC packages =====
+			"@trpc/client",
+			"@trpc/server",
+			"@trpc/tanstack-react-query",
+			
+			// ===== UI libraries =====
 			"lucide-react",
 			"recharts",
 			"class-variance-authority",
 			"clsx",
 			"tailwind-merge",
-			// Utilities that might have ESM issues
+			"radix-ui",
+			
+			// ===== Utilities that might have ESM issues =====
 			"superjson",
 			"date-fns",
+			"zod",
+			"cheerio",
+			"isomorphic-dompurify",
+			"highlight.js",
+			"streamdown",
+			"tw-animate-css",
 		],
-		// These can remain external (server-side only packages)
+		
+		// These MUST remain external (server-side only, have native bindings)
 		external: [
 			"@neondatabase/serverless",
 			"pg",
 			"drizzle-orm",
+			"drizzle-kit",
 			"better-auth",
+			"@sentry/tanstackstart-react",
 		],
 	},
 });
