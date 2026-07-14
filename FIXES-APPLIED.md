@@ -77,6 +77,43 @@ requirePermission("rankings.check")
 
 ---
 
+### 4. ❌ Vercel Deployment Error: Cannot find package 'react'
+
+**Error:**
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'react' 
+imported from /var/task/dist/server/server.js
+```
+
+**Cause:** Vite was treating `react` as an external dependency, leaving `import 'react'` statements in the compiled server code. Vercel Edge Functions don't have access to `node_modules` at runtime, causing the module not found error.
+
+**Fix:** Configure Vite to bundle React and other UI packages directly into the server code
+```typescript
+// vite.config.ts
+export default defineConfig({
+  ssr: {
+    noExternal: [
+      "react",
+      "react-dom",
+      "@tanstack/react-query",
+      "@tanstack/react-router",
+      "@tanstack/react-start",
+      // ... other UI packages that need to be bundled
+    ],
+  },
+});
+```
+
+**Why this works:**
+- `noExternal` tells Vite to **bundle** these packages into `dist/server/server.js`
+- The compiled server code becomes self-contained
+- No runtime `node_modules` lookups needed
+- Vercel Edge Functions can execute the code successfully
+
+**File:** `vite.config.ts`
+
+---
+
 ## ✅ Vercel Deployment Readiness
 
 ### Configuration Files Verified
@@ -89,14 +126,40 @@ requirePermission("rankings.check")
 }
 ```
 
-**2. `vite.config.ts`** ✅
+**2. `vite.config.ts`** ✅ **CRITICAL FIX FOR VERCEL**
 ```typescript
-tanstackStart({
-  server: {
-    preset: isVercel ? "vercel" : "node",
+export default defineConfig({
+  plugins: [
+    tanstackStart({
+      server: {
+        preset: isVercel ? "vercel" : "node",
+      },
+    }),
+  ],
+  ssr: {
+    // Bundle these packages into server code (don't treat as external)
+    noExternal: [
+      "react",
+      "react-dom",
+      "@tanstack/react-query",
+      "@tanstack/react-router",
+      "@tanstack/react-start",
+      // ... other UI packages
+    ],
+    // Keep these external (server-only)
+    external: [
+      "@neondatabase/serverless",
+      "pg",
+      "drizzle-orm",
+    ],
   },
-})
+});
 ```
+
+**Why this fixes the Vercel error:**
+- Vercel Edge Functions don't have access to `node_modules` at runtime
+- By adding `react` to `noExternal`, Vite bundles it directly into `dist/server/server.js`
+- The server code becomes self-contained and doesn't need to `import 'react'` from external packages
 
 **3. `package.json` scripts** ✅
 ```json

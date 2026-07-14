@@ -42,16 +42,22 @@ VITE v8.0.10 ready in 6245 ms
 - **Fix:** Added missing import
 - **File:** `src/routes/_app/index.tsx`
 
+### 4. **Vercel Deployment Error** ❌ → ✅
+- **Error:** `Cannot find package 'react'`
+- **Fix:** Configured Vite to bundle React into server code
+- **File:** `vite.config.ts`
+
 ---
 
 ## 📚 Key Documentation
 
 | Document | Purpose |
 |----------|---------|
-| **[FIXES-APPLIED.md](./FIXES-APPLIED.md)** | All errors fixed + Vercel deployment guide |
+| **[VERCEL-DEPLOYMENT.md](./VERCEL-DEPLOYMENT.md)** | 🚀 **Deploy to production** (includes React bundle fix) |
+| **[FIXES-APPLIED.md](./FIXES-APPLIED.md)** | All errors fixed + troubleshooting |
 | **[RBAC-GUIDE.md](./RBAC-GUIDE.md)** | Role permissions (Viewer, Staff, Admin) |
 | **[SENTRY-SETUP.md](./SENTRY-SETUP.md)** | Email alerts for critical errors |
-| **[DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md)** | Production deployment steps |
+| **[DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md)** | Production deployment checklist |
 | **[README.md](./README.md)** | Complete project documentation |
 
 ---

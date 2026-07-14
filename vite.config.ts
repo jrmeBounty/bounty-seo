@@ -22,11 +22,37 @@ export default defineConfig({
 		}),
 		viteReact(),
 	],
-	// ↓ Remove noExternal: true entirely.
-	// Only list packages that are GENUINELY ESM-only and fail as Node externals.
-	// Leave this array empty for now — add to it only if a specific package
-	// throws "ERR_REQUIRE_ESM" as an external.
+	// SSR configuration for Vercel Edge Functions
+	// Bundle all dependencies that need to be available at runtime
 	ssr: {
-		noExternal: [],
+		// Don't externalize these packages - bundle them into the server code
+		noExternal: [
+			// Core React packages
+			"react",
+			"react-dom",
+			// TanStack packages that need to be bundled
+			"@tanstack/react-query",
+			"@tanstack/react-router",
+			"@tanstack/react-start",
+			"@tanstack/react-table",
+			"@tanstack/react-form",
+			"@tanstack/react-store",
+			// UI libraries
+			"lucide-react",
+			"recharts",
+			"class-variance-authority",
+			"clsx",
+			"tailwind-merge",
+			// Utilities that might have ESM issues
+			"superjson",
+			"date-fns",
+		],
+		// These can remain external (server-side only packages)
+		external: [
+			"@neondatabase/serverless",
+			"pg",
+			"drizzle-orm",
+			"better-auth",
+		],
 	},
 });
